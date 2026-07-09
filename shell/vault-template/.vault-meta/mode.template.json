@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "mode": "para",
+  "configured_at": "{{DATE}}",
+  "config": {
+    "para": {
+      "projects_folder": "wiki/workspace/projects/",
+      "areas_folder": "wiki/areas/",
+      "resources_folder": "wiki/resources/",
+      "archives_folder": "wiki/archives/"
+    }
+  },
+  "zones": {
+    "default": "work",
+    "session_scoped": true,
+    "reset_on_new_session": true,
+    "isolation": "strict",
+    "work": {
+      "label": "Work",
+      "index": "wiki/index.md",
+      "log": "wiki/log.md",
+      "hot": "wiki/hot.md",
+      "projects_folder": "wiki/workspace/projects/",
+      "areas_folder": "wiki/areas/",
+      "resources_folder": "wiki/resources/",
+      "archives_folder": "wiki/archives/"
+    },
+    "_installer_note": "For EACH extra zone from the quiz, add one block keyed by a slug (e.g. 'personal', 'acme'): { label, root: 'wiki/<slug>/', index: 'wiki/<slug>/_index.md', log: 'wiki/<slug>/log.md', hot: 'wiki/<slug>/hot.md', projects_folder: 'wiki/<slug>/projects/', inbox_folder: 'wiki/<slug>/inbox/' }. Create those folders + a starter _index.md/log.md/hot.md. Mirror the zone names + switch phrases into CLAUDE.md/AGENTS.md.",
+    "_example_extra_zone": {
+      "label": "Personal",
+      "root": "wiki/personal/",
+      "index": "wiki/personal/_index.md",
+      "log": "wiki/personal/log.md",
+      "hot": "wiki/personal/hot.md",
+      "projects_folder": "wiki/personal/projects/",
+      "inbox_folder": "wiki/personal/inbox/"
+    },
+    "switch": {
+      "_installer_note": "Generate phrases per zone in the chosen language. Each extra zone gets to_<slug> (array of phrases) and an optional oneoff_<slug>_prefix. Always include to_work.",
+      "to_work": ["switch to work", "back to work", "work zone"]
+    }
+  }
+}

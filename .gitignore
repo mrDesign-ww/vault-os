@@ -1,0 +1,31 @@
+# Dependencies / transient
+node_modules/
+.ecc-src/
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets / local state (never commit)
+.env
+.env.*
+*.secret
+auth.json
+**/settings.local.json
+**/.mcp.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Generated vault state (regenerated per install)
+**/.vault-meta/chunks/
+**/.vault-meta/bm25/
+**/.vault-meta/embed-cache.json
+**/.vault-meta/*.lock
+**/.vault-meta/evolution/last-run.json
+**/.obsidian/workspace.json
+
+# Install backups
+*.backup
+*.bak

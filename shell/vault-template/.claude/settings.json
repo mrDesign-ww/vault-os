@@ -1,0 +1,16 @@
+{
+  "_comment": "Vault-scoped Claude Code settings. The SessionStart hook runs the evolution health-nudge (suggests tidy-up when the vault is due). Relative path = must be launched with cwd = vault root (the launch shortcut does this).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .vault-meta/evolution/health-check.py ] && python3 .vault-meta/evolution/health-check.py 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

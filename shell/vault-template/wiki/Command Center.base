@@ -1,0 +1,56 @@
+filters:
+  and:
+    - file.inFolder("wiki/")
+    - not:
+        - file.inFolder("wiki/personal")
+    - file.name != "Command Center"
+formulas:
+  age_days: (now() - file.mtime).days.round(0)
+properties:
+  file.name:
+    displayName: Title
+  type:
+    displayName: Type
+  status:
+    displayName: Status
+  updated:
+    displayName: Updated
+  formula.age_days:
+    displayName: Age (days)
+views:
+  - type: table
+    name: Projects
+    filters:
+      and:
+        - file.inFolder("wiki/workspace/projects")
+        - file.name == "_index"
+        - type == "project"
+    groupBy:
+      property: updated
+      direction: DESC
+    order:
+      - file.name
+      - status
+      - updated
+    limit: 50
+  - type: table
+    name: Recent
+    groupBy:
+      property: updated
+      direction: DESC
+    order:
+      - file.name
+      - type
+      - updated
+    limit: 30
+  - type: table
+    name: By type
+    groupBy:
+      property: type
+      direction: ASC
+    order:
+      - file.name
+      - status
+      - updated
+      - formula.age_days
+    limit: 200

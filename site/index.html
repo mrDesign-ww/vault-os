@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!--
+  ============================================================
+  VAULT OS  —  single-file landing page (GitHub Pages ready)
+  ------------------------------------------------------------
+  · No external CSS / JS / fonts / images. Renders fully offline.
+  · To rename the product: change PRODUCT_NAME in the script at
+    the bottom of <body>. To change the install target: REPO_URL.
+  ============================================================
+-->
+
+<title>Vault OS — a memory for Claude Code + Obsidian</title>
+<meta name="description" content="Vault OS turns Claude Code into a partner with a persistent wiki, curated skills and agents, isolated work zones, and a loop that improves itself. Install it in two steps.">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Vault OS — a memory for Claude Code + Obsidian">
+<meta property="og:description" content="Give Claude a memory that compounds. Persistent wiki, curated skills and agents, isolated zones, and a self-improvement loop. Two steps to install.">
+<meta property="og:image" content="assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0b10" media="(prefers-color-scheme: dark)">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0b10'/%3E%3Ccircle cx='16' cy='16' r='4.4' fill='%23f4a659'/%3E%3Ccircle cx='7' cy='9' r='2' fill='%2393a0dc'/%3E%3Ccircle cx='25' cy='10' r='2' fill='%2393a0dc'/%3E%3Ccircle cx='24' cy='24' r='2' fill='%23f4a659'/%3E%3Cg stroke='%23f4a659' stroke-width='1.1' opacity='.55'%3E%3Cline x1='16' y1='16' x2='7' y2='9'/%3E%3Cline x1='16' y1='16' x2='25' y2='10'/%3E%3Cline x1='16' y1='16' x2='24' y2='24'/%3E%3C/g%3E%3C/svg%3E">
+
+<script>
+  /* Set theme before first paint to avoid a flash. */
+  (function () {
+    document.documentElement.classList.add('js');
+    try {
+      var saved = localStorage.getItem('vaultos-theme');
+      var theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
+
+<style>
+  /* ============================ TOKENS ============================ */
+  :root {
+    /* Light (cool porcelain) — the default fallback if JS is off. */
+    --bg:        #f0f1f4;
+    --bg-1:      #ffffff;
+    --bg-tint:   #e8eaef;
+    --line:      rgba(20,22,30,.12);
+    --line-2:    rgba(20,22,30,.22);
+    --text:      #16181f;
+    --text-dim:  #545762;
+    --text-mute: #82858f;
+    --accent:      #c2632c;   /* ember, decorative fills/borders */
+    --accent-text: #a94e1c;   /* ember, AA-safe for text on --bg */
+    --accent-2:    #4f5ea8;   /* mineral, cool secondary */
+    --glow-a:  rgba(194,99,44,.16);
+    --glow-b:  rgba(79,94,168,.14);
+    --card-shadow: 0 1px 2px rgba(20,22,30,.05), 0 12px 34px -18px rgba(20,22,30,.22);
+    --sheen: rgba(255,255,255,.7);
+    color-scheme: light;
+  }
+
+  :root[data-theme="dark"] {
+    /* Dark (obsidian night) — the native mode. */
+    --bg:        #0a0b10;
+    --bg-1:      #101119;
+    --bg-tint:   #14161f;
+    --line:      rgba(234,232,225,.10);
+    --line-2:    rgba(234,232,225,.18);
+    --text:      #eae8e1;
+    --text-dim:  #9ea0ac;
+    --text-mute: #6c6e7b;
+    --accent:      #f4a659;
+    --accent-text: #f6b06a;
+    --accent-2:    #93a0dc;
+    --glow-a:  rgba(244,166,89,.16);
+    --glow-b:  rgba(147,160,220,.14);
+    --card-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 22px 50px -30px rgba(0,0,0,.9);
+    --sheen: rgba(255,255,255,.06);
+    color-scheme: dark;
+  }
+
+  /* No-JS: still honour the OS preference. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --bg:#0a0b10; --bg-1:#101119; --bg-tint:#14161f;
+      --line:rgba(234,232,225,.10); --line-2:rgba(234,232,225,.18);
+      --text:#eae8e1; --text-dim:#9ea0ac; --text-mute:#6c6e7b;
+      --accent:#f4a659; --accent-text:#f6b06a; --accent-2:#93a0dc;
+      --glow-a:rgba(244,166,89,.16); --glow-b:rgba(147,160,220,.14);
+      --sheen:rgba(255,255,255,.06);
+      color-scheme: dark;
+    }
+  }
+
+  :root {
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", "Cascadia Code", Menlo, Consolas, "Liberation Mono", monospace;
+    --serif: ui-serif, Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --maxw: 1140px;
+    --radius: 16px;
+    --radius-sm: 11px;
+
+    /* ---- MOTION TOKENS (custom curves, never CSS defaults) ---- */
+    --ease-out:      cubic-bezier(.22, 1, .36, 1);    /* long decelerate — reveals, hero draw */
+    --ease-out-soft: cubic-bezier(.33, 1, .68, 1);    /* gentle — hover / micro-interactions */
+    --ease-in-out:   cubic-bezier(.65, 0, .35, 1);    /* symmetric — theme swap, ambient loops */
+    --ease-spring:   cubic-bezier(.34, 1.56, .64, 1); /* ~15% overshoot — node pops, press settle */
+    --dur-1: 120ms;   /* press / instant feedback   (<300 rule) */
+    --dur-2: 190ms;   /* hover / toggle             (<300 rule) */
+    --dur-3: 280ms;   /* card lift / icon shift      (<300 rule) */
+    --dur-4: 480ms;   /* scroll reveal (theatrical entrance) */
+    --dur-5: 720ms;   /* hero edge draw (dramatic build) */
+  }
+
+  /* ============================ RESET ============================ */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  /* Reduced motion: calm final states, no motion, everything visible. */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+  }
+  img, svg { max-width: 100%; }
+  a { color: var(--accent-text); text-decoration-color: color-mix(in srgb, var(--accent-text) 40%, transparent); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--accent-text); }
+  ::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--text); }
+
+  :where(a, button, input, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .skip {
+    position: absolute; left: 12px; top: -60px;
+    background: var(--accent); color: #1a0e06;
+    padding: 9px 16px; border-radius: 10px; font-family: var(--mono);
+    font-size: 13px; font-weight: 600; z-index: 100; transition: top .18s ease;
+  }
+  .skip:focus { top: 12px; }
+
+  /* ============================ LAYOUT ============================ */
+  .wrap { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: clamp(20px, 5vw, 40px); }
+  section { position: relative; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem; font-weight: 600;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent-text);
+    display: inline-flex; align-items: center; gap: .6em;
+    margin: 0 0 1.1rem;
+  }
+  .eyebrow::before {
+    content: ""; width: 22px; height: 1px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  h1, h2, h3 { font-family: var(--mono); font-weight: 600; letter-spacing: -.02em; line-height: 1.06; margin: 0; }
+  h2 { font-size: clamp(1.65rem, 3.6vw, 2.55rem); }
+  h3 { font-size: 1.06rem; letter-spacing: -.01em; }
+  p { margin: 0; }
+  .lead { font-size: clamp(1.05rem, 1.8vw, 1.28rem); color: var(--text-dim); line-height: 1.55; }
+
+  section[id] { scroll-margin-top: 84px; }
+  .section-head { max-width: 640px; margin-bottom: clamp(2.2rem, 5vw, 3.4rem); }
+  .section-head p { margin-top: 1rem; color: var(--text-dim); }
+
+  /* ============================ NAV ============================ */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: saturate(1.4) blur(12px);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid transparent;
+    transition: border-color .25s ease, background .25s ease;
+  }
+  header.nav.scrolled { border-bottom-color: var(--line); }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+  .brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: var(--text); }
+  .brand .mark { width: 26px; height: 26px; flex: none; }
+  .brand b { font-family: var(--mono); font-weight: 600; font-size: 1.02rem; letter-spacing: -.01em; }
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+  .nav-link {
+    position: relative;
+    font-family: var(--mono); font-size: .82rem; color: var(--text-dim);
+    text-decoration: none; padding: 8px 12px; border-radius: 9px;
+    transition: color var(--dur-2) var(--ease-out-soft), background var(--dur-2) var(--ease-out-soft);
+  }
+  .nav-link::after {
+    content: ""; position: absolute; left: 12px; right: 12px; bottom: 5px; height: 1.5px;
+    background: var(--accent); border-radius: 2px; opacity: 0;
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform var(--dur-2) var(--ease-out-soft), opacity var(--dur-2) var(--ease-out-soft);
+  }
+  .nav-link:hover { color: var(--text); background: var(--bg-tint); }
+  .nav-link:hover::after { transform: scaleX(1); opacity: .6; }
+  @media (max-width: 620px) { .nav-link.hide-sm { display: none; } }
+
+  .icon-btn {
+    display: grid; place-items: center;
+    width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg-1); color: var(--text-dim);
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: color var(--dur-2) var(--ease-out-soft), border-color var(--dur-2) var(--ease-out-soft), transform var(--dur-2) var(--ease-out-soft), background var(--dur-2) var(--ease-out-soft);
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--line-2); }
+  .icon-btn:active { transform: scale(.9); transition-duration: var(--dur-1); }
+  /* sun/moon stacked in one cell — crossfade + rotate on theme change */
+  .icon-btn .sun, .icon-btn .moon {
+    grid-column: 1; grid-row: 1;
+    transition: opacity var(--dur-2) var(--ease-out-soft), transform var(--dur-3) var(--ease-spring);
+  }
+  .icon-btn .moon { opacity: 1; transform: none; }
+  .icon-btn .sun  { opacity: 0; transform: rotate(-90deg) scale(.4); }
+  :root[data-theme="dark"] .icon-btn .moon { opacity: 0; transform: rotate(90deg) scale(.4); }
+  :root[data-theme="dark"] .icon-btn .sun  { opacity: 1; transform: none; }
+
+  /* ============================ BUTTONS ============================ */
+  .btn {
+    display: inline-flex; align-items: center; gap: .55em;
+    font-family: var(--mono); font-size: .92rem; font-weight: 600;
+    padding: 12px 20px; border-radius: 11px; text-decoration: none;
+    cursor: pointer; border: 1px solid transparent;
+    transition: transform var(--dur-2) var(--ease-out-soft), box-shadow var(--dur-2) var(--ease-out-soft), background var(--dur-2) var(--ease-out-soft), border-color var(--dur-2) var(--ease-out-soft), color var(--dur-2) var(--ease-out-soft);
+  }
+  .btn-primary {
+    color: #1c1005;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 92%, white), var(--accent));
+    box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 14px 30px -14px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  .btn-primary:hover { transform: translateY(-2px) scale(1.015); box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 22px 40px -14px color-mix(in srgb, var(--accent) 78%, transparent); }
+  .btn-ghost { color: var(--text); background: var(--bg-1); border-color: var(--line-2); }
+  .btn-ghost:hover { transform: translateY(-2px) scale(1.015); border-color: var(--accent); color: var(--accent-text); box-shadow: 0 16px 32px -20px var(--glow-a); }
+  /* press: quick, decisive, overrides hover lift */
+  .btn:active { transform: translateY(0) scale(.965); transition-duration: var(--dur-1); }
+
+  /* ============================ HERO ============================ */
+  .hero { padding: clamp(2.6rem, 7vw, 5.2rem) 0 clamp(2.6rem, 6vw, 4.4rem); overflow: hidden; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+  @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; gap: 2.4rem; } }
+
+  .hero h1 { font-size: clamp(2.35rem, 6.2vw, 4.3rem); }
+  .hero h1 .em { color: var(--accent-text); }
+  .hero h1 .serif { font-family: var(--serif); font-weight: 500; font-style: italic; letter-spacing: -.01em; }
+  .hero .lead { margin-top: 1.35rem; max-width: 33ch; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 2rem; }
+  .hero-note { margin-top: 1.15rem; font-family: var(--mono); font-size: .78rem; color: var(--text-mute); display: flex; align-items: center; gap: .5em; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); flex: none; }
+
+  .hero-visual { position: relative; }
+  .graph-card {
+    position: relative; border: 1px solid var(--line); border-radius: var(--radius);
+    background:
+      radial-gradient(120% 90% at 80% 0%, var(--glow-a), transparent 60%),
+      radial-gradient(120% 100% at 0% 100%, var(--glow-b), transparent 55%),
+      var(--bg-1);
+    box-shadow: var(--card-shadow); padding: 8px; overflow: hidden;
+  }
+  .graph-card .cap {
+    position: absolute; left: 16px; top: 14px; z-index: 2;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--text-mute);
+  }
+  .graph-svg { display: block; width: 100%; height: auto; }
+
+  /* graph boot animation */
+  .edge { stroke: var(--accent-2); stroke-opacity: .5; stroke-width: 1.1; fill: none; }
+  .edge.warm { stroke: var(--accent); stroke-opacity: .55; }
+  .node-core { fill: var(--accent); }
+  .node-lg   { fill: var(--bg-1); stroke: var(--accent); stroke-width: 1.6; }
+  .node-cool { fill: var(--accent-2); }
+  .node-warm { fill: var(--accent); }
+  .glab { font-family: var(--mono); font-size: 9.5px; fill: var(--text-mute); letter-spacing: .04em; }
+  .halo { opacity: 0; }
+  .node, .glab, .halo, .pulse { transform-box: fill-box; transform-origin: center; }
+  /* Orchestrated boot: core stages first, trunk edges draw out, nodes pop as edges land,
+     satellites + labels follow, then a single settle into an ambient breathe. */
+  @media (prefers-reduced-motion: no-preference) {
+    .edge { stroke-dasharray: 240; stroke-dashoffset: 240; animation: draw var(--dur-5) var(--ease-out) forwards; animation-delay: var(--d, 0s); }
+    .node, .glab { opacity: 0; animation: pop 520ms var(--ease-spring) forwards; animation-delay: var(--d, 0s); }
+    .halo { animation: halo 1.5s var(--ease-out) .16s forwards; }
+    .pulse { animation: pop 520ms var(--ease-spring) var(--d, 0s) forwards, breathe 6s var(--ease-in-out) 1.9s infinite; }
+  }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes pop { 0% { opacity: 0; transform: scale(.34); } 55% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes halo { 0% { opacity: .5; transform: scale(.5); } 70% { opacity: 0; } 100% { opacity: 0; transform: scale(2.5); } }
+  @keyframes breathe { 0%,100% { opacity: .85; transform: scale(1); } 50% { opacity: .5; transform: scale(1.06); } }
+
+  .logos { margin-top: clamp(2.4rem, 5vw, 3.4rem); display: flex; align-items: center; gap: 20px; flex-wrap: wrap; color: var(--text-mute); font-family: var(--mono); font-size: .74rem; letter-spacing: .04em; }
+  .logos .pair { display: inline-flex; align-items: center; gap: 9px; }
+  .logos svg { opacity: .85; }
+  .logos .x { opacity: .5; }
+
+  /* ============================ THESIS ============================ */
+  .thesis { padding: clamp(2.4rem,6vw,4rem) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .thesis p { font-family: var(--serif); font-size: clamp(1.35rem, 3.2vw, 2.05rem); line-height: 1.4; letter-spacing: -.01em; max-width: 20ch; }
+  .thesis .body { font-family: var(--sans); font-size: 1rem; color: var(--text-dim); line-height: 1.65; letter-spacing: 0; max-width: 42ch; }
+  .thesis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+  @media (max-width: 760px) { .thesis-grid { grid-template-columns: 1fr; gap: 1.4rem; } }
+  .thesis em { color: var(--accent-text); font-style: italic; }
+
+  /* ============================ GIVES (cards) ============================ */
+  .band { padding: clamp(3.4rem, 8vw, 6rem) 0; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 20px); }
+  @media (max-width: 900px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    position: relative; padding: clamp(22px, 3vw, 30px);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--bg-1); box-shadow: var(--card-shadow);
+    transition: transform var(--dur-3) var(--ease-out-soft), border-color var(--dur-3) var(--ease-out-soft), box-shadow var(--dur-3) var(--ease-out-soft);
+  }
+  .card::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0; transform: scaleX(.55); transform-origin: center;
+    transition: opacity var(--dur-3) var(--ease-out-soft), transform var(--dur-3) var(--ease-out-soft);
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--line-2); box-shadow: 0 1px 2px rgba(20,22,30,.05), 0 26px 52px -26px var(--glow-a), var(--card-shadow); }
+  .card:hover::before { opacity: .9; transform: scaleX(1); }
+  .card .ic { width: 40px; height: 40px; margin-bottom: 18px; color: var(--accent); transition: transform var(--dur-3) var(--ease-spring), color var(--dur-3) var(--ease-out-soft); }
+  .card:hover .ic { transform: translateY(-3px) scale(1.06); }
+  .card .num { position: absolute; top: 22px; right: 24px; font-family: var(--mono); font-size: .72rem; color: var(--text-mute); }
+  .card h3 { margin-bottom: .55rem; }
+  .card p { color: var(--text-dim); font-size: .96rem; line-height: 1.6; }
+  .card .tag { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: .7rem; letter-spacing: .04em; color: var(--accent-text); background: color-mix(in srgb, var(--accent) 14%, transparent); padding: 4px 9px; border-radius: 7px; }
+
+  .addon { margin-top: 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 20px; border: 1px dashed var(--line-2); border-radius: var(--radius-sm); background: var(--bg-tint); }
+  .addon .k { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-mute); }
+  .addon p { font-size: .95rem; color: var(--text-dim); }
+  .addon b { color: var(--text); font-weight: 600; }
+
+  /* ============================ HOW (diagram) ============================ */
+  .how { padding: clamp(3.4rem, 8vw, 6rem) 0; border-top: 1px solid var(--line); }
+  .diagram-shell {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background:
+      radial-gradient(90% 120% at 15% 0%, var(--glow-a), transparent 55%),
+      radial-gradient(90% 120% at 85% 100%, var(--glow-b), transparent 55%),
+      var(--bg-1);
+    box-shadow: var(--card-shadow); padding: clamp(18px, 3vw, 30px); overflow-x: auto;
+  }
+  .diagram-svg { display: block; width: 100%; min-width: 560px; height: auto; margin-inline: auto; }
+  .dlab { font-family: var(--mono); }
+  .flow-legend { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px; font-family: var(--mono); font-size: .8rem; color: var(--text-dim); }
+  .flow-legend span { display: inline-flex; align-items: center; gap: .55em; }
+  .flow-legend b { color: var(--accent-text); font-weight: 600; }
+  /* diagram ambient life: marching-ants evolution loop + traveling exchange dots */
+  .flow-dot { opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .evo-loop { animation: march 2.6s linear infinite; }
+    .flow-dot { animation: flowR 2.8s var(--ease-in-out) infinite; }
+    .flow-dot.rec { animation: flowL 2.8s var(--ease-in-out) 1.4s infinite; }
+  }
+  @keyframes march { to { stroke-dashoffset: -18; } }
+  @keyframes flowR { 0% { opacity: 0; translate: 0 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; translate: 160px 0; } }
+  @keyframes flowL { 0% { opacity: 0; translate: 0 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; translate: -160px 0; } }
+
+  /* ============================ INSTALL ============================ */
+  .install { padding: clamp(3.6rem, 8vw, 6.2rem) 0; border-top: 1px solid var(--line); }
+  .install-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(1.8rem, 4vw, 3.2rem); align-items: center; }
+  /* let the track shrink below the terminal's min-content so the terminal scrolls
+     internally (like the diagram) instead of forcing the page to scroll sideways */
+  .install-grid > * { min-width: 0; }
+  @media (max-width: 860px) { .install-grid { grid-template-columns: 1fr; gap: 2rem; } }
+  .steps { display: flex; flex-direction: column; gap: 8px; }
+  .step { display: flex; gap: 16px; padding: 16px 0; }
+  .step .n { font-family: var(--mono); font-size: .82rem; font-weight: 600; color: var(--accent-text); border: 1px solid var(--line-2); border-radius: 9px; padding: 4px 9px; height: fit-content; }
+  .step h3 { margin-bottom: .3rem; }
+  .step p { color: var(--text-dim); font-size: .95rem; }
+  .step + .step { border-top: 1px solid var(--line); }
+
+  /* terminal — intentionally dark in BOTH themes (a terminal is dark) */
+  .term {
+    --tbg:#0c0d13; --tline:rgba(255,255,255,.09); --tdim:#8a8c98; --ttext:#e9e7e0;
+    border-radius: var(--radius); border: 1px solid var(--tline);
+    background: linear-gradient(180deg,#12131b,var(--tbg));
+    box-shadow: 0 30px 60px -34px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.05) inset;
+    overflow: hidden;
+  }
+  .term-bar { display: flex; align-items: center; gap: 8px; padding: 13px 16px; border-bottom: 1px solid var(--tline); }
+  .term-bar .tl { width: 11px; height: 11px; border-radius: 50%; background: #34363f; }
+  .term-bar .tl.a { background: #f4a659; } .term-bar .tl.b { background: #d1d3db; opacity:.5;} .term-bar .tl.c { background:#93a0dc;}
+  .term-bar .tt { margin-left: 8px; font-family: var(--mono); font-size: .74rem; color: var(--tdim); letter-spacing: .04em; }
+  .term-body { padding: 20px clamp(16px,3vw,24px) 24px; font-family: var(--mono); font-size: clamp(.82rem, 1.7vw, .95rem); line-height: 1.85; color: var(--ttext); overflow-x: auto; }
+  .term-body .ln { white-space: pre; }
+  .term-body .pr { color: var(--accent-2); }        /* prompt glyph */
+  .term-body .cmd { color: var(--ttext); }
+  .term-body .arg { color: #f4a659; }
+  .term-body .cm { color: var(--tdim); }             /* comment */
+  .term-body .ok { color: #8fd39a; }                 /* success */
+  .term-body .q  { color: #d7d9e2; }
+  .term-body .cur { display:inline-block; width:8px; height:1.05em; vertical-align:-2px; background:var(--accent); margin-left:3px; border-radius:1px; }
+  /* boot-log: lines stream in one by one when the terminal scrolls into view */
+  @media (prefers-reduced-motion: no-preference) {
+    .term-body .cur { animation: blink 1.1s steps(1) infinite; }
+    html.js .term.boot .ln { opacity: 0; animation: termLine .34s var(--ease-out) var(--ld, 0s) forwards; }
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes termLine { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  .term-copy { position:absolute; top:11px; right:12px; font-family:var(--mono); font-size:.72rem; color:var(--tdim); background:rgba(255,255,255,.06); border:1px solid var(--tline); border-radius:8px; padding:5px 10px; cursor:pointer; z-index:3; transition:color .15s, background .15s; }
+  .term-copy:hover { color:#fff; background:rgba(255,255,255,.12); }
+  .term-wrap { position: relative; }
+
+  /* ============================ INSIDE (manifest) ============================ */
+  .inside { padding: clamp(3.4rem, 8vw, 6rem) 0; border-top: 1px solid var(--line); }
+  .manifest {
+    border-radius: var(--radius); border: 1px solid var(--line-2);
+    background: var(--bg-1); box-shadow: var(--card-shadow); overflow: hidden;
+  }
+  .manifest-top { display:flex; align-items:center; gap:10px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--bg-tint); font-family: var(--mono); font-size: .74rem; color: var(--text-mute); letter-spacing: .06em; }
+  .manifest-top .fname { color: var(--text-dim); }
+  .mf-body { padding: clamp(18px,3vw,26px) clamp(18px,3vw,28px); font-family: var(--mono); font-size: clamp(.82rem,1.7vw,.95rem); line-height: 2.05; overflow-x: auto; }
+  .mf-body .row { white-space: pre; }
+  .mf-body .dl { color: var(--text-mute); }         /* --- delimiters */
+  .mf-body .key { color: var(--accent-text); }
+  .mf-body .val { color: var(--text); }
+  .mf-body .big { font-size: 1.15em; font-weight: 600; }
+  .mf-body .cmt { color: var(--text-mute); }
+  .mf-body .sep { color: var(--accent-2); }
+
+  /* ==================================================================
+     NEW SECTIONS — hooks timeline · evolution loop · curator · skills
+     Infographic-first. Every animated bit DEFAULTS to its final state
+     (visible / drawn / checked) and only hides+animates under
+     (prefers-reduced-motion: no-preference) + .in — so reduced-motion
+     and JS-off both render a complete, calm infographic.
+     ================================================================== */
+  .section-note { margin-top: 1.1rem; display: inline-flex; align-items: center; gap: .6em; font-family: var(--mono); font-size: .78rem; color: var(--text-mute); }
+  .section-note .dot { background: var(--accent-2); }
+
+  /* ---------------- HOOKS timeline ---------------- */
+  .hooks { padding: clamp(3.4rem, 8vw, 6rem) 0; border-top: 1px solid var(--line); }
+  .timeline { position: relative; margin-top: clamp(2.2rem, 5vw, 3rem); }
+  .timeline::before {
+    content: ""; position: absolute; top: 19px; left: 9%; right: 9%; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--line-2) 12%, var(--line-2) 88%, transparent);
+  }
+  .stations { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 2vw, 22px); }
+  .station { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 11px; }
+  .station .snode {
+    position: relative; width: 40px; height: 40px; border-radius: 50%; flex: none; z-index: 1;
+    display: grid; place-items: center;
+    background: var(--bg-1); border: 1.5px solid var(--accent); color: var(--accent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  .station.cool .snode { border-color: var(--accent-2); color: var(--accent-2); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-2) 8%, transparent); }
+  .station .snode > svg { width: 18px; height: 18px; }
+  .station .pring { position: absolute; inset: -1.5px; border-radius: 50%; border: 1.5px solid var(--accent); opacity: 0; pointer-events: none; }
+  .station.cool .pring { border-color: var(--accent-2); }
+  .station .txt { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+  .station .when { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-text); }
+  .station.cool .when { color: var(--accent-2); }
+  .station .hk { font-family: var(--mono); font-size: .82rem; font-weight: 600; color: var(--text); }
+  .station .eff { font-size: .85rem; color: var(--text-dim); line-height: 1.5; max-width: 22ch; }
+  .hooks-foot { margin-top: clamp(1.8rem, 4vw, 2.6rem); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px; border: 1px dashed var(--line-2); border-radius: var(--radius-sm); background: var(--bg-tint); font-size: .9rem; color: var(--text-dim); }
+  .hooks-foot b { color: var(--text); font-weight: 600; }
+  .hooks-foot .k { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-mute); }
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .timeline.reveal .snode { opacity: 0; scale: .5; }
+    html.js .timeline.reveal.in .snode { opacity: 1; scale: 1; transition: opacity .38s var(--ease-out), scale .5s var(--ease-spring); }
+    html.js .timeline.reveal.in .station:nth-child(1) .snode { transition-delay: .12s; }
+    html.js .timeline.reveal.in .station:nth-child(2) .snode { transition-delay: .26s; }
+    html.js .timeline.reveal.in .station:nth-child(3) .snode { transition-delay: .40s; }
+    html.js .timeline.reveal.in .station:nth-child(4) .snode { transition-delay: .54s; }
+    .station .pring { animation: pring 3.6s var(--ease-out) infinite; }
+    .station:nth-child(2) .pring { animation-delay: .9s; }
+    .station:nth-child(3) .pring { animation-delay: 1.8s; }
+    .station:nth-child(4) .pring { animation-delay: 2.7s; }
+  }
+  @keyframes pring { 0% { opacity: .45; transform: scale(1); } 70% { opacity: 0; } 100% { opacity: 0; transform: scale(1.85); } }
+  @media (max-width: 720px) {
+    .timeline::before { top: 20px; bottom: 20px; left: 19px; right: auto; width: 2px; height: auto; background: linear-gradient(180deg, transparent, var(--line-2) 6%, var(--line-2) 94%, transparent); }
+    .stations { grid-template-columns: 1fr; gap: 4px; }
+    .station { flex-direction: row; align-items: flex-start; text-align: left; gap: 16px; padding: 12px 0; }
+    .station .txt { align-items: flex-start; }
+    .station .eff { max-width: none; }
+  }
+
+  /* ---------------- EVOLUTION loop ---------------- */
+  .evolve { padding: clamp(3.4rem, 8vw, 6rem) 0; border-top: 1px solid var(--line); }
+  .evolve-grid { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: clamp(2rem, 5vw, 3.6rem); align-items: center; }
+  @media (max-width: 880px) { .evolve-grid { grid-template-columns: 1fr; gap: 2.4rem; } }
+  .loop-card {
+    position: relative; border: 1px solid var(--line); border-radius: var(--radius);
+    background: radial-gradient(85% 85% at 50% 42%, var(--glow-a), transparent 62%), var(--bg-1);
+    box-shadow: var(--card-shadow); padding: clamp(14px, 3vw, 26px);
+  }
+  .loop-svg { display: block; width: 100%; max-width: 360px; height: auto; margin-inline: auto; }
+  .evo-ring { fill: none; stroke: var(--accent); stroke-opacity: .4; stroke-width: 1.6; stroke-dasharray: 2 7; }
+  .orbit-dot { fill: var(--accent); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 65%, transparent)); }
+  .orbit { transform-box: view-box; transform-origin: 150px 150px; }
+  .evo-core { transform-box: fill-box; transform-origin: center; }
+  .loop-node { transform-box: fill-box; transform-origin: center; }
+  .loop-node rect { fill: var(--bg-1); stroke: var(--line-2); }
+  .loop-node text { font-family: var(--mono); font-size: 11px; fill: var(--text); font-weight: 600; }
+  .loop-node .ln-num { fill: var(--accent-text); }
+  .loop-node.you rect { fill: var(--accent); stroke: var(--accent); }
+  .loop-node.you text { fill: #1c1005; }
+  .loop-node.you .ln-num { fill: #1c1005; }
+  .loop-cc { font-family: var(--serif); font-style: italic; font-size: 12.5px; fill: var(--text-dim); }
+  .you-tag { font-family: var(--mono); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; fill: var(--accent-text); }
+  .hitl { display: inline-flex; align-items: center; gap: .55em; font-family: var(--mono); font-size: .74rem; font-weight: 600; color: var(--accent-text); background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); padding: 7px 13px; border-radius: 9px; }
+  .loop-list { list-style: none; padding: 0; margin: 20px 0 0; display: flex; flex-direction: column; gap: 13px; }
+  .loop-list li { display: grid; grid-template-columns: auto 1fr; gap: 13px; align-items: baseline; }
+  .loop-list .ls { font-family: var(--mono); font-size: .72rem; font-weight: 600; color: var(--accent-text); border: 1px solid var(--line-2); border-radius: 7px; padding: 2px 8px; }
+  .loop-list p { color: var(--text-dim); font-size: .92rem; line-height: 1.5; }
+  .loop-list b { color: var(--text); font-weight: 600; }
+  @media (prefers-reduced-motion: no-preference) {
+    .evo-ring { animation: march 3s linear infinite; }
+    .orbit { animation: orbit 9s linear infinite; }
+    .evo-core { animation: breathe 5.5s var(--ease-in-out) infinite; }
+    html.js .loop-card.reveal .loop-node { opacity: 0; scale: .55; }
+    html.js .loop-card.reveal.in .loop-node { opacity: 1; scale: 1; transition: opacity .4s var(--ease-out), scale .5s var(--ease-spring); transition-delay: var(--nd, 0s); }
+  }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+
+  /* ---------------- MECHANISMS (curator · reflection · skills) ---------------- */
+  .mechs { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 20px); margin-top: clamp(2.4rem, 5vw, 3.4rem); }
+  @media (max-width: 820px) { .mechs { grid-template-columns: 1fr; } }
+  .mech { position: relative; padding: clamp(20px, 2.6vw, 26px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-1); box-shadow: var(--card-shadow); transition: transform var(--dur-3) var(--ease-out-soft), border-color var(--dur-3) var(--ease-out-soft); }
+  .mech:hover { transform: translateY(-3px); border-color: var(--line-2); }
+  .mech .mic { width: 34px; height: 34px; color: var(--accent); margin-bottom: 13px; }
+  .mech h3 { font-size: 1rem; margin-bottom: .4rem; }
+  .mech > p { color: var(--text-dim); font-size: .9rem; line-height: 1.55; }
+  /* curator scorecard */
+  .scorecard { margin-top: 16px; font-family: var(--mono); font-size: .78rem; }
+  .sc-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 8px 0; }
+  .sc-row + .sc-row { border-top: 1px dashed var(--line); }
+  .sc-row .lbl { color: var(--text-dim); }
+  .sc-row .cnt { color: var(--accent-text); font-variant-numeric: tabular-nums; }
+  .sc-row .res { display: inline-flex; align-items: center; gap: 7px; color: var(--text); }
+  .sc-check { width: 15px; height: 15px; flex: none; color: var(--accent-text); }
+  .sc-check path { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 26; stroke-dashoffset: 0; }
+  .sc-foot { margin-top: 15px; font-family: var(--mono); font-size: .7rem; color: var(--text-mute); line-height: 1.55; }
+  .sc-foot b { color: var(--accent-text); font-weight: 600; }
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .mech.reveal .sc-check path { stroke-dashoffset: 26; }
+    html.js .mech.reveal.in .sc-check path { animation: drawCheck .5s var(--ease-out) forwards; }
+    html.js .mech.reveal.in .sc-row:nth-child(1) .sc-check path { animation-delay: .20s; }
+    html.js .mech.reveal.in .sc-row:nth-child(2) .sc-check path { animation-delay: .34s; }
+    html.js .mech.reveal.in .sc-row:nth-child(3) .sc-check path { animation-delay: .48s; }
+    html.js .mech.reveal.in .sc-row:nth-child(4) .sc-check path { animation-delay: .62s; }
+    html.js .mech.reveal.in .sc-row:nth-child(5) .sc-check path { animation-delay: .76s; }
+  }
+  @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+  /* mini flow (reflection + skill creation) */
+  .miniflow { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+  .mf-step { font-family: var(--mono); font-size: .72rem; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--bg-tint); color: var(--text-dim); white-space: nowrap; }
+  .mf-step.hot { color: #1c1005; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 92%, white), var(--accent)); border-color: var(--accent); font-weight: 600; }
+  .mf-step.you { color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 45%, var(--line-2)); background: color-mix(in srgb, var(--accent) 10%, transparent); font-weight: 600; }
+  .mf-ar { flex: none; color: var(--text-mute); display: inline-flex; }
+  .mf-drift { margin-top: 13px; display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: .7rem; color: var(--text-mute); }
+  .mf-drift svg { color: var(--accent-2); flex: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .mech.reveal .miniflow > * { opacity: 0; translate: 0 6px; }
+    html.js .mech.reveal.in .miniflow > * { opacity: 1; translate: 0 0; transition: opacity .32s var(--ease-out), translate .32s var(--ease-out); }
+    html.js .mech.reveal.in .miniflow > *:nth-child(1) { transition-delay: .18s; }
+    html.js .mech.reveal.in .miniflow > *:nth-child(2) { transition-delay: .28s; }
+    html.js .mech.reveal.in .miniflow > *:nth-child(3) { transition-delay: .38s; }
+    html.js .mech.reveal.in .miniflow > *:nth-child(4) { transition-delay: .48s; }
+    html.js .mech.reveal.in .miniflow > *:nth-child(5) { transition-delay: .58s; }
+    html.js .mech.reveal.in .miniflow > *:nth-child(6) { transition-delay: .68s; }
+    html.js .mech.reveal.in .miniflow > *:nth-child(7) { transition-delay: .78s; }
+  }
+
+  /* ============================ FOOTER ============================ */
+  footer { border-top: 1px solid var(--line); padding: clamp(2.6rem,6vw,4rem) 0 3rem; }
+  .foot { display: flex; justify-content: space-between; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+  .foot .brand b { font-size: 1rem; }
+  .foot p { margin-top: .7rem; color: var(--text-mute); font-size: .88rem; max-width: 34ch; }
+  .foot-links { display: flex; gap: 26px; flex-wrap: wrap; font-family: var(--mono); font-size: .84rem; }
+  .foot-links a { color: var(--text-dim); text-decoration: none; }
+  .foot-links a:hover { color: var(--accent-text); }
+  .foot-base { margin-top: 2.4rem; padding-top: 1.4rem; border-top: 1px solid var(--line); display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; font-family: var(--mono); font-size: .76rem; color: var(--text-mute); }
+
+  /* ============================ REVEAL ============================ */
+  /* Only hide when JS is confirmed active, so any JS failure leaves content visible.
+     Uses the individual translate/scale props (not transform) so hover transforms
+     compose cleanly on top of the revealed state. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .reveal {
+      opacity: 0; translate: 0 22px;
+      transition: opacity var(--dur-4) var(--ease-out), translate var(--dur-4) var(--ease-out), scale var(--dur-4) var(--ease-out);
+      transition-delay: var(--reveal-delay, 0ms);
+    }
+    html.js .reveal.fade-only { translate: 0 0; }
+    html.js .card.reveal { translate: 0 26px; scale: .985; }
+    html.js .reveal.in { opacity: 1; translate: 0 0; scale: 1; }
+  }
+
+  /* ============================ THEME SWAP ============================ */
+  /* Brief window on toggle: crossfade the big colour surfaces instead of a hard cut. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.theme-transition, html.theme-transition *, html.theme-transition *::before, html.theme-transition *::after {
+      transition: background-color .38s var(--ease-in-out), border-color .38s var(--ease-in-out), color .38s var(--ease-in-out), fill .38s var(--ease-in-out), stroke .38s var(--ease-in-out) !important;
+    }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#install">Skip to install</a>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Vault OS home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="var(--bg-1)" stroke="var(--line-2)"/>
+        <g stroke="var(--accent)" stroke-width="1.1" opacity=".5">
+          <line x1="16" y1="16" x2="7" y2="9"/><line x1="16" y1="16" x2="25" y2="10"/><line x1="16" y1="16" x2="24" y2="24"/>
+        </g>
+        <circle cx="16" cy="16" r="4.2" fill="var(--accent)"/>
+        <circle cx="7" cy="9" r="2" fill="var(--accent-2)"/>
+        <circle cx="25" cy="10" r="2" fill="var(--accent-2)"/>
+        <circle cx="24" cy="24" r="2" fill="var(--accent)"/>
+      </svg>
+      <b data-product-name>Vault OS</b>
+    </a>
+    <nav class="nav-right">
+      <a class="nav-link hide-sm" href="#gives">Features</a>
+      <a class="nav-link hide-sm" href="#how">How it works</a>
+      <a class="nav-link hide-sm" href="#evolution">Evolves</a>
+      <a class="nav-link" href="#install">Install</a>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle light and dark theme" title="Toggle theme">
+        <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+        <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.2 8.2 0 1 1 9.6 4a6.4 6.4 0 0 0 10.4 10.5z"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Claude&nbsp;Code&nbsp;&times;&nbsp;Obsidian</p>
+        <h1>Give Claude a <span class="em">memory</span> that <span class="serif">compounds.</span></h1>
+        <p class="lead">A companion operating system that turns Claude Code into a partner with a persistent wiki, a curated kit of skills and agents, isolated work zones, and a loop that keeps improving itself.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#install">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+            Install in two steps
+          </a>
+          <a class="btn btn-ghost" href="#how">See how it works</a>
+        </div>
+        <p class="hero-note"><span class="dot"></span> Local-first. Your notes stay plain-text files on your machine.</p>
+      </div>
+
+      <div class="hero-visual">
+        <div class="graph-card reveal fade-only">
+          <span class="cap">vault · graph</span>
+          <svg class="graph-svg" viewBox="0 0 520 440" role="img" aria-label="A knowledge graph: a central vault core linked to index, log and hot-cache notes and to three isolated zone clusters for work, personal and clients.">
+            <!-- edges (drawn first, behind nodes) -->
+            <g fill="none">
+              <line class="edge warm" x1="260" y1="220" x2="150" y2="120" style="--d:.15s"/>
+              <line class="edge warm" x1="260" y1="220" x2="380" y2="120" style="--d:.25s"/>
+              <line class="edge warm" x1="260" y1="220" x2="160" y2="330" style="--d:.35s"/>
+              <line class="edge warm" x1="260" y1="220" x2="372" y2="330" style="--d:.3s"/>
+              <line class="edge" x1="260" y1="220" x2="95"  y2="220" style="--d:.4s"/>
+              <line class="edge" x1="260" y1="220" x2="435" y2="220" style="--d:.4s"/>
+              <line class="edge" x1="150" y1="120" x2="95"  y2="220" style="--d:.5s"/>
+              <line class="edge" x1="380" y1="120" x2="435" y2="220" style="--d:.5s"/>
+              <line class="edge" x1="95"  y1="220" x2="160" y2="330" style="--d:.55s"/>
+              <line class="edge" x1="435" y1="220" x2="372" y2="330" style="--d:.55s"/>
+              <!-- satellites -->
+              <line class="edge" x1="150" y1="120" x2="110" y2="66"  style="--d:.6s"/>
+              <line class="edge" x1="150" y1="120" x2="205" y2="72"  style="--d:.62s"/>
+              <line class="edge" x1="380" y1="120" x2="425" y2="70"  style="--d:.6s"/>
+              <line class="edge" x1="95"  y1="220" x2="42"  y2="180" style="--d:.66s"/>
+              <line class="edge" x1="95"  y1="220" x2="46"  y2="264" style="--d:.68s"/>
+              <line class="edge" x1="435" y1="220" x2="486" y2="182" style="--d:.66s"/>
+              <line class="edge" x1="160" y1="330" x2="120" y2="384" style="--d:.7s"/>
+              <line class="edge" x1="372" y1="330" x2="410" y2="384" style="--d:.7s"/>
+            </g>
+            <!-- primary nodes -->
+            <circle class="node node-lg pulse" cx="260" cy="220" r="24" style="--d:.1s"/>
+            <circle class="halo" cx="260" cy="220" r="24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-opacity=".6"/>
+            <circle class="node node-core"      cx="260" cy="220" r="9"  style="--d:.15s"/>
+            <circle class="node node-warm" cx="150" cy="120" r="8" style="--d:.5s"/>
+            <circle class="node node-warm" cx="380" cy="120" r="8" style="--d:.52s"/>
+            <circle class="node node-cool" cx="95"  cy="220" r="9" style="--d:.55s"/>
+            <circle class="node node-cool" cx="435" cy="220" r="9" style="--d:.55s"/>
+            <circle class="node node-warm" cx="160" cy="330" r="8" style="--d:.6s"/>
+            <circle class="node node-warm" cx="372" cy="330" r="8" style="--d:.6s"/>
+            <!-- satellites -->
+            <circle class="node node-cool" cx="110" cy="66"  r="4.4" style="--d:.72s"/>
+            <circle class="node node-cool" cx="205" cy="72"  r="4"   style="--d:.74s"/>
+            <circle class="node node-cool" cx="425" cy="70"  r="4.4" style="--d:.72s"/>
+            <circle class="node node-warm" cx="42"  cy="180" r="4"   style="--d:.78s"/>
+            <circle class="node node-warm" cx="46"  cy="264" r="4.4" style="--d:.8s"/>
+            <circle class="node node-cool" cx="486" cy="182" r="4.4" style="--d:.78s"/>
+            <circle class="node node-warm" cx="120" cy="384" r="4"   style="--d:.82s"/>
+            <circle class="node node-warm" cx="410" cy="384" r="4.4" style="--d:.82s"/>
+            <!-- labels -->
+            <text class="glab node" x="260" y="264" text-anchor="middle" style="--d:.2s">vault</text>
+            <text class="glab node" x="150" y="104" text-anchor="middle" style="--d:.55s">index</text>
+            <text class="glab node" x="380" y="104" text-anchor="middle" style="--d:.57s">log</text>
+            <text class="glab node" x="95"  y="205" text-anchor="middle" style="--d:.6s">work</text>
+            <text class="glab node" x="435" y="205" text-anchor="middle" style="--d:.6s">personal</text>
+            <text class="glab node" x="160" y="356" text-anchor="middle" style="--d:.66s">hot</text>
+            <text class="glab node" x="372" y="356" text-anchor="middle" style="--d:.66s">clients</text>
+          </svg>
+        </div>
+
+        <div class="logos">
+          <span class="pair">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 17l6-6-6-6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 18h8" stroke-linecap="round"/></svg>
+            Claude Code
+          </span>
+          <span class="x">+</span>
+          <span class="pair">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 3 8v8l9 6 9-6V8l-9-6zm0 3.2 5.8 3.9-2.1 8.1H8.3L6.2 9.1 12 5.2z" opacity=".9"/></svg>
+            Obsidian
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ THESIS ============================ -->
+  <section class="thesis">
+    <div class="wrap thesis-grid">
+      <p>Every session starts smarter than the last.</p>
+      <p class="body">Out of the box, Claude wakes up blank each time you open it. <span data-product-name>Vault&nbsp;OS</span> gives it a place to keep what it learns: a plain-text wiki that remembers your projects, decisions, and sources. Drop something in, ask a question later, and <em>the knowledge is still there</em> &mdash; sharper for having been used.</p>
+    </div>
+  </section>
+
+  <!-- ============================ GIVES ============================ -->
+  <section class="band" id="gives">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">What you get</p>
+        <h2>Everything Claude has been missing.</h2>
+        <p>Not a prompt pack. A working system that installs into Claude Code and Obsidian and runs alongside every session.</p>
+      </div>
+
+      <div class="cards" data-stagger>
+        <article class="card reveal">
+          <span class="num">01</span>
+          <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M6 12.5 20 6l14 6.5-14 6.5L6 12.5Z" stroke-linejoin="round"/>
+            <path d="M6 20 20 26.5 34 20M6 27.5 20 34l14-6.5" stroke-linejoin="round" opacity=".55"/>
+          </svg>
+          <h3>Persistent memory</h3>
+          <p>A PARA wiki holds every session in plain markdown. Drop a source, ask a question, and the knowledge compounds instead of vanishing when the chat ends.</p>
+          <span class="tag">index &middot; log &middot; hot cache</span>
+        </article>
+
+        <article class="card reveal">
+          <span class="num">02</span>
+          <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <rect x="5" y="9" width="8.5" height="22" rx="2.5"/>
+            <rect x="15.75" y="9" width="8.5" height="22" rx="2.5" opacity=".7"/>
+            <rect x="26.5" y="9" width="8.5" height="22" rx="2.5" opacity=".45"/>
+          </svg>
+          <h3>Isolated zones</h3>
+          <p>Work, personal, and client vaults never touch. Each keeps its own index, log, and memory. Switch the whole session with one sentence.</p>
+          <span class="tag">work &middot; personal &middot; clients</span>
+        </article>
+
+        <article class="card reveal">
+          <span class="num">03</span>
+          <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <rect x="6" y="6" width="12" height="12" rx="3"/>
+            <rect x="22" y="6" width="12" height="12" rx="3" opacity=".55"/>
+            <rect x="14" y="22" width="12" height="12" rx="3"/>
+            <path d="M18 12h4M20 18v4" opacity=".7"/>
+          </svg>
+          <h3>Curated plugins, skills &amp; agents</h3>
+          <p>A hand-picked kit for design, development, and review. The right specialist loads for the task, instead of one generalist guessing its way through.</p>
+          <span class="tag">plugins &middot; skills &middot; agents</span>
+        </article>
+
+        <article class="card reveal">
+          <span class="num">04</span>
+          <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M22 5 9 23h9l-2 12 13-18h-9l2-12Z" stroke-linejoin="round"/>
+          </svg>
+          <h3>Automation hooks</h3>
+          <p>Context loads on start, every change auto-commits to git, and a nudge reminds you to save at the end. Quiet plumbing you never touch.</p>
+          <span class="tag">load &middot; commit &middot; nudge</span>
+        </article>
+
+        <article class="card reveal">
+          <span class="num">05</span>
+          <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M31 15A13 13 0 1 0 33 22" stroke-linecap="round"/>
+            <path d="M31 7v8h-8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>
+          </svg>
+          <h3>It improves itself</h3>
+          <p>An evolution loop tidies the vault, refreshes memory, and learns from friction &mdash; and proposes every change for you to approve.</p>
+          <span class="tag">propose &middot; approve &middot; apply</span>
+        </article>
+
+        <article class="card reveal">
+          <span class="num">06</span>
+          <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M20 5 7 10v9c0 8 5.6 13 13 16 7.4-3 13-8 13-16v-9L20 5Z" stroke-linejoin="round"/>
+            <path d="m14.5 20 4 4 7.5-8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3>Local-first &amp; private</h3>
+          <p>Plain files on your machine, versioned with local git. Nothing phones home; your notes never leave unless you send them.</p>
+          <span class="tag">plain-text &middot; local git</span>
+        </article>
+      </div>
+
+      <div class="addon reveal">
+        <span class="k">Add-ons</span>
+        <p>Bring your own engines: <b>Codex</b> for design and ideation, and <b>ECC</b> as a heavier development framework. Optional, and wired in the same way.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ HOW ============================ -->
+  <section class="how" id="how">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">How it works</p>
+        <h2>A brain, a pair of hands, and a loop between them.</h2>
+        <p>Obsidian holds the knowledge. Claude Code does the work. An evolution loop keeps the whole thing tuned.</p>
+      </div>
+
+      <div class="diagram-shell reveal">
+        <svg class="diagram-svg" viewBox="0 0 720 320" role="img" aria-label="Architecture: the Obsidian vault (the brain) and Claude Code (the hands) exchange notes and actions, wrapped by an evolution loop that maintains the system.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 10 5 0 10z" fill="var(--accent)"/>
+            </marker>
+            <marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 10 5 0 10z" fill="var(--accent-2)"/>
+            </marker>
+          </defs>
+
+          <!-- BRAIN (left) -->
+          <g>
+            <rect x="40" y="70" width="228" height="150" rx="18" fill="var(--bg-tint)" stroke="var(--line-2)"/>
+            <text class="dlab" x="64" y="102" font-size="12" letter-spacing=".14em" fill="var(--text-mute)">OBSIDIAN VAULT</text>
+            <text class="dlab" x="64" y="132" font-size="19" font-weight="600" fill="var(--text)">The brain</text>
+            <text class="dlab" x="64" y="162" font-size="12.5" fill="var(--text-dim)">notes &middot; zones</text>
+            <text class="dlab" x="64" y="182" font-size="12.5" fill="var(--text-dim)">dashboards &middot; graph</text>
+            <circle cx="235" cy="99" r="4" fill="var(--accent-2)"/>
+          </g>
+
+          <!-- HANDS (right) -->
+          <g>
+            <rect x="452" y="70" width="228" height="150" rx="18" fill="var(--bg-tint)" stroke="var(--line-2)"/>
+            <text class="dlab" x="476" y="102" font-size="12" letter-spacing=".14em" fill="var(--text-mute)">CLAUDE CODE</text>
+            <text class="dlab" x="476" y="132" font-size="19" font-weight="600" fill="var(--text)">The hands</text>
+            <text class="dlab" x="476" y="162" font-size="12.5" fill="var(--text-dim)">skills &middot; agents</text>
+            <text class="dlab" x="476" y="182" font-size="12.5" fill="var(--text-dim)">hooks &middot; commands</text>
+            <circle cx="647" cy="99" r="4" fill="var(--accent)"/>
+          </g>
+
+          <!-- exchange arrows -->
+          <path d="M280 128 H440" fill="none" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#ah)"/>
+          <path d="M440 168 H280" fill="none" stroke="var(--accent-2)" stroke-width="1.8" marker-end="url(#ah2)"/>
+          <circle class="flow-dot" cx="280" cy="128" r="3.2" fill="var(--accent)"/>
+          <circle class="flow-dot rec" cx="440" cy="168" r="3.2" fill="var(--accent-2)"/>
+          <text class="dlab" x="360" y="120" text-anchor="middle" font-size="11.5" fill="var(--text-dim)">recall</text>
+          <text class="dlab" x="360" y="188" text-anchor="middle" font-size="11.5" fill="var(--text-dim)">record</text>
+
+          <!-- evolution loop (wraps underneath) -->
+          <path class="evo-loop" d="M120 220 C 120 292, 300 300, 360 300 C 420 300, 600 292, 600 220"
+                fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="2 7" stroke-linecap="round" marker-end="url(#ah)"/>
+          <g transform="translate(360,300)">
+            <rect x="-78" y="-16" width="156" height="32" rx="16" fill="var(--bg-1)" stroke="var(--line-2)"/>
+            <text class="dlab" x="0" y="4" text-anchor="middle" font-size="12" font-weight="600" fill="var(--accent-text)">evolution loop</text>
+          </g>
+        </svg>
+
+        <div class="flow-legend">
+          <span><b>You ask.</b></span>
+          <span>the hands act</span>
+          <span>the brain records</span>
+          <span>the loop refines</span>
+          <span><b>the next ask starts smarter.</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ HOOKS ============================ -->
+  <section class="hooks" id="hooks">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Automation · hooks</p>
+        <h2>It works while you work.</h2>
+        <p>Four hooks fire on their own across a session, so the vault stays saved, loaded, and current without a single manual step.</p>
+      </div>
+
+      <div class="timeline reveal">
+        <div class="stations">
+          <div class="station">
+            <div class="snode">
+              <div class="pring"></div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18l14-9z"/></svg>
+            </div>
+            <div class="txt">
+              <span class="when">session start</span>
+              <span class="hk">SessionStart</span>
+              <span class="eff">Loads your recent context (hot cache) — Claude resumes where you left off.</span>
+            </div>
+          </div>
+
+          <div class="station cool">
+            <div class="snode">
+              <div class="pring"></div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 3v5.2M12 15.8V21"/></svg>
+            </div>
+            <div class="txt">
+              <span class="when">on write / edit</span>
+              <span class="hk">PostToolUse</span>
+              <span class="eff">Auto-commits every vault change to git — nothing is ever lost.</span>
+            </div>
+          </div>
+
+          <div class="station">
+            <div class="snode">
+              <div class="pring"></div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>
+            </div>
+            <div class="txt">
+              <span class="when">session end</span>
+              <span class="hk">Stop</span>
+              <span class="eff">Nudges you to refresh the hot cache and capture new knowledge.</span>
+            </div>
+          </div>
+
+          <div class="station cool">
+            <div class="snode">
+              <div class="pring"></div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2.5 6 4-14 2.5 8h5"/></svg>
+            </div>
+            <div class="txt">
+              <span class="when">when due</span>
+              <span class="hk">Health nudge</span>
+              <span class="eff">Suggests running evolution when the vault is due for a tidy-up.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hooks-foot reveal">
+        <span class="k">quietly</span>
+        <p>The system works in the background so you don't have to. <b>No commands to remember, nothing to save by hand.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ EVOLUTION ============================ -->
+  <section class="evolve" id="evolution">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Stays sharp · evolution</p>
+        <h2>It keeps itself sharp.</h2>
+        <p>A loop tidies the vault, learns from friction, and turns your habits into tools. Every change is a proposal you approve — never a silent edit.</p>
+      </div>
+
+      <div class="evolve-grid">
+        <div class="loop-card reveal fade-only">
+          <svg class="loop-svg" viewBox="0 0 300 300" role="img" aria-label="The evolution loop runs clockwise in four stages: 1 detect, 2 propose, 3 approve — that is you, 4 apply, then it repeats. Nothing changes without your approval.">
+            <circle class="evo-ring" cx="150" cy="150" r="96"/>
+            <g class="orbit"><circle class="orbit-dot" cx="150" cy="54" r="4.5"/></g>
+            <circle class="evo-core" cx="150" cy="150" r="23" fill="var(--bg-1)" stroke="var(--accent)" stroke-width="1.4"/>
+            <text class="loop-cc" x="150" y="147" text-anchor="middle">stays</text>
+            <text class="loop-cc" x="150" y="161" text-anchor="middle">sharp</text>
+            <g class="loop-node" style="--nd:.15s">
+              <rect x="111" y="40" width="78" height="28" rx="14"/>
+              <text x="150" y="58" text-anchor="middle"><tspan class="ln-num">1</tspan> · detect</text>
+            </g>
+            <g class="loop-node" style="--nd:.28s">
+              <rect x="207" y="136" width="78" height="28" rx="14"/>
+              <text x="246" y="154" text-anchor="middle"><tspan class="ln-num">2</tspan> · propose</text>
+            </g>
+            <g class="loop-node you" style="--nd:.41s">
+              <rect x="111" y="232" width="78" height="28" rx="14"/>
+              <text x="150" y="250" text-anchor="middle"><tspan class="ln-num">3</tspan> · approve</text>
+            </g>
+            <g class="loop-node" style="--nd:.54s">
+              <rect x="15" y="136" width="78" height="28" rx="14"/>
+              <text x="54" y="154" text-anchor="middle"><tspan class="ln-num">4</tspan> · apply</text>
+            </g>
+            <text class="you-tag" x="150" y="279" text-anchor="middle">that's you</text>
+          </svg>
+        </div>
+
+        <div class="loop-copy reveal">
+          <span class="hitl">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            proposes → you approve → applies
+          </span>
+          <ul class="loop-list">
+            <li><span class="ls">1</span><p><b>Detect.</b> A Curator and a reflection pass scan memory, the wiki, and your session history.</p></li>
+            <li><span class="ls">2</span><p><b>Propose.</b> It drafts fixes — consolidations, fresher retrieval, even new skills — and shows them.</p></li>
+            <li><span class="ls">3</span><p><b>Approve.</b> You review the diff. Nothing lands without your yes (safe mechanical fixes aside).</p></li>
+            <li><span class="ls">4</span><p><b>Apply.</b> Approved changes commit, the index re-syncs, and the loop comes back around.</p></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mechs" data-stagger>
+        <article class="mech reveal">
+          <svg class="mic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 11h26M7 20h20M7 29h13" stroke-linecap="round"/><circle cx="29" cy="28" r="5"/><path d="M32.7 31.7 36 35" stroke-linecap="round"/></svg>
+          <h3>Curator keeps it clean</h3>
+          <p>On a cadence, it reviews memory and the wiki, then consolidates and re-syncs the index.</p>
+          <div class="scorecard">
+            <div class="sc-row"><span class="lbl">Orphans</span><span class="cnt">3 found</span><span class="res">linked <svg class="sc-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+            <div class="sc-row"><span class="lbl">Stale notes</span><span class="cnt">5 found</span><span class="res">refreshed <svg class="sc-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+            <div class="sc-row"><span class="lbl">Duplicates</span><span class="cnt">2 found</span><span class="res">merged <svg class="sc-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+            <div class="sc-row"><span class="lbl">Overgrown logs</span><span class="cnt">1 found</span><span class="res">folded <svg class="sc-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+            <div class="sc-row"><span class="lbl">Index</span><span class="cnt">drift</span><span class="res">re-synced <svg class="sc-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+          </div>
+          <p class="sc-foot"><b>Safe fixes apply automatically.</b> Anything destructive waits for your approval.</p>
+        </article>
+
+        <article class="mech reveal">
+          <svg class="mic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="17" cy="17" r="11"/><path d="m25 25 9 9" stroke-linecap="round"/><path d="M13 17h8M17 13v8" stroke-linecap="round" opacity=".55"/></svg>
+          <h3>Reflection learns from friction</h3>
+          <p>It reads session history for the rough spots and proposes a fix for each.</p>
+          <div class="miniflow">
+            <span class="mf-step">session history</span>
+            <span class="mf-ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <span class="mf-step">friction spotted</span>
+            <span class="mf-ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <span class="mf-step you">fix proposed</span>
+          </div>
+          <p class="sc-foot">Catches where you <b>corrected it</b> or <b>repeated yourself</b> — then suggests a change.</p>
+        </article>
+
+        <article class="mech reveal">
+          <svg class="mic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m20 6 3.7 7.8L32 15l-6 5.9 1.4 8.5L20 25.4 12.6 29.4 14 20.9 8 15l8.3-1.2z" stroke-linejoin="round"/></svg>
+          <h3>It grows new skills</h3>
+          <p>Repeat a procedure and it offers to capsule it into a reusable skill.</p>
+          <div class="miniflow">
+            <span class="mf-step hot">repeat ×3</span>
+            <span class="mf-ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <span class="mf-step">propose draft</span>
+            <span class="mf-ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <span class="mf-step you">you approve</span>
+            <span class="mf-ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <span class="mf-step">reusable skill</span>
+          </div>
+          <p class="mf-drift">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>
+            double filter — Claude's judgement, then yours — keeps the set clean; capsules update on drift
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ INSTALL ============================ -->
+  <section class="install" id="install">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Install</p>
+        <h2>Two steps. No config files.</h2>
+        <p>You do not clone, copy folders, or edit settings. You open Claude Code and ask.</p>
+      </div>
+
+      <div class="install-grid">
+        <div class="steps" data-stagger>
+          <div class="step reveal">
+            <span class="n">01</span>
+            <div>
+              <h3>Open Claude Code</h3>
+              <p>In any project or a fresh empty folder. That is the whole prerequisite.</p>
+            </div>
+          </div>
+          <div class="step reveal">
+            <span class="n">02</span>
+            <div>
+              <h3>Say the word</h3>
+              <p>Ask it to install the repo. Answer a short quiz &mdash; your name, language, and which zones you want &mdash; and it wires up everything for you.</p>
+            </div>
+          </div>
+          <div class="step reveal">
+            <span class="n">&check;</span>
+            <div>
+              <h3>That&rsquo;s it</h3>
+              <p>Plugins, skills, agents, and the vault template are in place. Your memory is live and already recording.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="term-wrap reveal">
+          <div class="term">
+            <div class="term-bar">
+              <span class="tl a"></span><span class="tl b"></span><span class="tl c"></span>
+              <span class="tt">claude code</span>
+            </div>
+            <button class="term-copy" id="copy-btn" aria-label="Copy the install command">copy</button>
+            <div class="term-body">
+<div class="ln"><span class="pr">&gt;</span> <span class="cmd">install</span> <span class="arg" id="repo-line">github.com/mrDesign-ww/vault-os</span></div>
+<div class="ln"><span class="cm">&nbsp;&nbsp;reading shell &middot; found 23 plugins, 30+ skills</span></div>
+<div class="ln">&nbsp;</div>
+<div class="ln"><span class="q">?</span> <span class="cmd">What should Claude call you?</span> <span class="arg">Vlad</span></div>
+<div class="ln"><span class="q">?</span> <span class="cmd">Language for the vault?</span> <span class="arg">English</span></div>
+<div class="ln"><span class="q">?</span> <span class="cmd">Zones to create?</span> <span class="arg">work, personal, clients</span></div>
+<div class="ln">&nbsp;</div>
+<div class="ln"><span class="ok">&check;</span> <span class="cm">vault template &middot; plugins &middot; skills &middot; agents</span></div>
+<div class="ln"><span class="ok">&check;</span> <span class="cm">evolution loop armed</span></div>
+<div class="ln"><span class="ok">done.</span> <span class="cmd">your vault is live<span class="cur" aria-hidden="true"></span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ INSIDE ============================ -->
+  <section class="inside" id="inside">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">What&rsquo;s inside</p>
+        <h2>The whole kit, in one manifest.</h2>
+        <p>Everything below installs together and stays local. Nothing phones home.</p>
+      </div>
+
+      <div class="manifest reveal">
+        <div class="manifest-top">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" stroke-linejoin="round"/><path d="M14 3v5h5" stroke-linejoin="round"/></svg>
+          <span class="fname" data-product-name>vault-os</span><span>.manifest</span>
+        </div>
+        <div class="mf-body">
+<div class="row"><span class="dl">---</span></div>
+<div class="row"><span class="key">plugins</span><span class="dl">:</span>   <span class="val big">23</span>          <span class="cmt"># curated Claude Code plugins</span></div>
+<div class="row"><span class="key">skills</span><span class="dl">:</span>    <span class="val big">30+</span>         <span class="cmt"># design, dev, review, research</span></div>
+<div class="row"><span class="key">agents</span><span class="dl">:</span>    <span class="val">specialist team</span>  <span class="cmt"># loaded on demand</span></div>
+<div class="row"><span class="key">zones</span><span class="dl">:</span>     <span class="val">work</span> <span class="sep">&middot;</span> <span class="val">personal</span> <span class="sep">&middot;</span> <span class="val">clients</span>  <span class="cmt"># fully isolated</span></div>
+<div class="row"><span class="key">memory</span><span class="dl">:</span>    <span class="val">PARA wiki</span> <span class="sep">&middot;</span> <span class="val">index</span> <span class="sep">&middot;</span> <span class="val">log</span> <span class="sep">&middot;</span> <span class="val">hot cache</span></div>
+<div class="row"><span class="key">evolution</span><span class="dl">:</span> <span class="val">self-improvement loop</span> <span class="cmt"># propose &middot; you approve</span></div>
+<div class="row"><span class="key">hooks</span><span class="dl">:</span>     <span class="val">session-aware</span> <span class="sep">&middot;</span> <span class="val">auto-commit</span>  <span class="cmt"># quiet background</span></div>
+<div class="row"><span class="key">add_ons</span><span class="dl">:</span>    <span class="val">Codex</span> <span class="sep">&middot;</span> <span class="val">ECC</span>      <span class="cmt"># optional engines</span></div>
+<div class="row"><span class="key">license</span><span class="dl">:</span>   <span class="val">local-first</span>     <span class="cmt"># your files stay yours</span></div>
+<div class="row"><span class="dl">---</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#top" aria-label="Vault OS home">
+          <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="var(--bg-1)" stroke="var(--line-2)"/>
+            <g stroke="var(--accent)" stroke-width="1.1" opacity=".5"><line x1="16" y1="16" x2="7" y2="9"/><line x1="16" y1="16" x2="25" y2="10"/><line x1="16" y1="16" x2="24" y2="24"/></g>
+            <circle cx="16" cy="16" r="4.2" fill="var(--accent)"/><circle cx="7" cy="9" r="2" fill="var(--accent-2)"/><circle cx="25" cy="10" r="2" fill="var(--accent-2)"/><circle cx="24" cy="24" r="2" fill="var(--accent)"/>
+          </svg>
+          <b data-product-name>Vault OS</b>
+        </a>
+        <p>A companion operating system for Claude Code and Obsidian. Give your assistant a memory that compounds.</p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#gives">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#hooks">Hooks</a>
+        <a href="#evolution">Evolves</a>
+        <a href="#install">Install</a>
+        <a href="#inside">What&rsquo;s inside</a>
+        <a id="repo-foot" href="#">Repository</a>
+      </nav>
+    </div>
+    <div class="foot-base">
+      <span>Local git only. Your notes never leave your machine.</span>
+      <span data-product-name>Vault OS</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ---- Single source of truth: rename the product / repo here ---- */
+  const PRODUCT_NAME = "Vault OS";
+  const REPO_URL = "github.com/mrDesign-ww/vault-os";  // shown in hero terminal + links
+
+  document.querySelectorAll('[data-product-name]').forEach(function (el) { el.textContent = PRODUCT_NAME; });
+  document.title = PRODUCT_NAME + " — a memory for Claude Code + Obsidian";
+  const repoLine = document.getElementById('repo-line');
+  if (repoLine) repoLine.textContent = REPO_URL;
+  ['repo-foot'].forEach(function (id) {
+    var a = document.getElementById(id); if (a) a.href = 'https://' + REPO_URL;
+  });
+
+  /* ---- Theme toggle (with a brief colour crossfade) ---- */
+  var toggle = document.getElementById('theme-toggle');
+  var themeTimer;
+  toggle.addEventListener('click', function () {
+    var root = document.documentElement;
+    var cur = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      root.classList.add('theme-transition');
+      clearTimeout(themeTimer);
+      themeTimer = setTimeout(function () { root.classList.remove('theme-transition'); }, 400);
+    }
+    root.setAttribute('data-theme', cur);
+    try { localStorage.setItem('vaultos-theme', cur); } catch (e) {}
+  });
+
+  /* ---- Copy the install command ---- */
+  var copyBtn = document.getElementById('copy-btn');
+  if (copyBtn) copyBtn.addEventListener('click', function () {
+    var text = 'install ' + REPO_URL;
+    var done = function () { copyBtn.textContent = 'copied'; setTimeout(function () { copyBtn.textContent = 'copy'; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, done); }
+    else { done(); }
+  });
+
+  /* ---- Nav shadow on scroll ---- */
+  var nav = document.getElementById('nav');
+  var onScroll = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
+  onScroll(); addEventListener('scroll', onScroll, { passive: true });
+
+  /* ---- Stagger delays: children of a [data-stagger] group cascade in sequence ---- */
+  document.querySelectorAll('[data-stagger]').forEach(function (group) {
+    group.querySelectorAll('.reveal').forEach(function (el, i) {
+      el.style.setProperty('--reveal-delay', (i * 70) + 'ms');
+    });
+  });
+  /* Boot-log line delays (used only when the terminal gets the .boot class). */
+  document.querySelectorAll('.term-body .ln').forEach(function (ln, i) {
+    ln.style.setProperty('--ld', (i * 70) + 'ms');
+  });
+
+  /* ---- Reveal on scroll (skipped under reduced motion; fails open) ---- */
+  var reveals = document.querySelectorAll('.reveal');
+  var showAll = function () { reveals.forEach(function (el) { el.classList.add('in'); }); };
+  try {
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      showAll();
+    } else {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('in');
+          /* stream the terminal boot-log the first time it appears */
+          if (e.target.classList.contains('term-wrap')) {
+            var term = e.target.querySelector('.term');
+            if (term) term.classList.add('boot');
+          }
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      reveals.forEach(function (el) { io.observe(el); });
+    }
+  } catch (e) { showAll(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Vault OS — Codex shell template.
+# The installer MERGES these blocks into the teammate's ~/.codex/config.toml
+# AFTER backing up the existing file. It contains NO secrets, NO personal paths,
+# NO machine-specific trust hashes — those are auth'd / regenerated on the teammate's
+# machine (auth.json via OpenAI login; [hooks.state] via Codex's trust prompt).
+
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+service_tier = "default"
+
+# Register the public claude-obsidian plugin as a marketplace via GIT source
+# (not a local path). Codex clones/caches it, giving Codex the same skills,
+# commands, agents, and hooks the Claude side uses.
+[marketplaces.agricidaniel-claude-obsidian]
+source_type = "git"
+source = "https://github.com/AgriciDaniel/claude-obsidian.git"
+
+[plugins."claude-obsidian@agricidaniel-claude-obsidian"]
+enabled = true
+
+# The vault's AGENTS.md (Codex mirror of CLAUDE.md) supplies the operating rules.
+# On first open of the vault, Codex will prompt to trust the project + the plugin
+# hooks; that is expected and machine-specific.
