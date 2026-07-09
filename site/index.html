@@ -14,14 +14,18 @@
   ============================================================
 -->
 
-<title>Vault OS — a memory for Claude Code + Obsidian</title>
-<meta name="description" content="Vault OS turns Claude Code into a partner with a persistent wiki, curated skills and agents, isolated work zones, and a loop that improves itself. Install it in two steps.">
+<title>Vault OS — Persistent Memory &amp; Skills for Claude Code + Obsidian</title>
+<meta name="description" content="An installable Claude Code + Obsidian companion: persistent wiki-memory, curated skills and agents, isolated work zones, and a self-improvement loop. Install in two steps.">
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="Vault OS — a memory for Claude Code + Obsidian">
-<meta property="og:description" content="Give Claude a memory that compounds. Persistent wiki, curated skills and agents, isolated zones, and a self-improvement loop. Two steps to install.">
-<meta property="og:image" content="assets/og.png">
+<meta property="og:url" content="https://mrdesign-ww.github.io/vault-os/">
+<meta property="og:title" content="Vault OS — Persistent Memory & Skills for Claude Code + Obsidian">
+<meta property="og:description" content="An installable Claude Code + Obsidian companion: persistent wiki-memory, curated skills and agents, isolated work zones, and a self-improvement loop. Install in two steps.">
+<meta property="og:image" content="https://mrdesign-ww.github.io/vault-os/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vault OS — Persistent Memory & Skills for Claude Code + Obsidian">
+<meta name="twitter:description" content="An installable Claude Code + Obsidian companion: persistent wiki-memory, curated skills and agents, isolated work zones, and a self-improvement loop. Install in two steps.">
+<meta name="twitter:image" content="https://mrdesign-ww.github.io/vault-os/assets/og.png">
 
 <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a0b10" media="(prefers-color-scheme: dark)">
@@ -610,6 +614,28 @@
     html.js .reveal.fade-only { translate: 0 0; }
     html.js .card.reveal { translate: 0 26px; scale: .985; }
     html.js .reveal.in { opacity: 1; translate: 0 0; scale: 1; }
+  }
+
+  /* ============================ PERF ============================ */
+  /* Ambient loops (breathe, marching-ants, orbit, pulse rings, flow dots,
+     terminal cursor) keep the main thread painting every frame. A tiny
+     IntersectionObserver adds .anim-idle to a section's host while it is
+     outside the viewport, so NOTHING animates off-screen and scrolling stays
+     free of continuous style-recalc + paint. Visual design is unchanged: each
+     loop simply resumes as its section approaches the viewport. Purely a JS
+     enhancement — with JS off (or reduced motion) the class is never added. */
+  .anim-idle, .anim-idle * { animation-play-state: paused !important; }
+
+  /* Promote ONLY the layers that are actively animating (host on-screen), so
+     the compositor drives transform/opacity instead of repainting; the hint is
+     dropped the moment the host goes idle, releasing the layer. At most one
+     section is ever active, so the promoted-layer count stays bounded. */
+  @media (prefers-reduced-motion: no-preference) {
+    .graph-card:not(.anim-idle) .pulse       { will-change: transform, opacity; }
+    .diagram-shell:not(.anim-idle) .flow-dot { will-change: translate, opacity; }
+    .loop-card:not(.anim-idle) .orbit        { will-change: transform; }
+    .loop-card:not(.anim-idle) .evo-core     { will-change: transform, opacity; }
+    .timeline:not(.anim-idle) .station .pring{ will-change: transform, opacity; }
   }
 
   /* ============================ THEME SWAP ============================ */
@@ -1206,7 +1232,7 @@
   const REPO_URL = "github.com/mrDesign-ww/vault-os";  // shown in hero terminal + links
 
   document.querySelectorAll('[data-product-name]').forEach(function (el) { el.textContent = PRODUCT_NAME; });
-  document.title = PRODUCT_NAME + " — a memory for Claude Code + Obsidian";
+  document.title = PRODUCT_NAME + " — Persistent Memory & Skills for Claude Code + Obsidian";
   const repoLine = document.getElementById('repo-line');
   if (repoLine) repoLine.textContent = REPO_URL;
   ['repo-foot'].forEach(function (id) {
@@ -1237,10 +1263,20 @@
     else { done(); }
   });
 
-  /* ---- Nav shadow on scroll ---- */
+  /* ---- Nav shadow on scroll ----
+     Coalesce to one rAF-timed read per frame and write the class only when the
+     state flips. Reading scrollY inside rAF (layout already settled) avoids the
+     forced reflow a synchronous read-in-scroll-handler causes, and keeps the
+     backdrop-filtered nav from being style-invalidated on every scroll tick. */
   var nav = document.getElementById('nav');
-  var onScroll = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
-  onScroll(); addEventListener('scroll', onScroll, { passive: true });
+  var navScrolled = null, navTick = false;
+  var applyNav = function () {
+    navTick = false;
+    var s = window.scrollY > 8;
+    if (s !== navScrolled) { navScrolled = s; nav.classList.toggle('scrolled', s); }
+  };
+  var onScroll = function () { if (!navTick) { navTick = true; requestAnimationFrame(applyNav); } };
+  applyNav(); addEventListener('scroll', onScroll, { passive: true });
 
   /* ---- Stagger delays: children of a [data-stagger] group cascade in sequence ---- */
   document.querySelectorAll('[data-stagger]').forEach(function (group) {
@@ -1276,6 +1312,26 @@
       reveals.forEach(function (el) { io.observe(el); });
     }
   } catch (e) { showAll(); }
+
+  /* ---- Pause ambient animations while their section is off-screen ----
+     The single biggest scroll win: every infinite loop (breathe, marching-ants,
+     orbit, pulse rings, flow dots, blinking cursor) otherwise repaints the main
+     thread continuously, even far outside the viewport. We toggle .anim-idle so
+     only the section currently on (or near) screen animates. Fails open: with no
+     IntersectionObserver, or under reduced motion, nothing is paused. */
+  try {
+    var reduceAnim = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var animHosts = document.querySelectorAll('.graph-card, .diagram-shell, .loop-card, .timeline, .term');
+    if (!reduceAnim && ('IntersectionObserver' in window) && animHosts.length) {
+      var animIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          /* on-screen (or within the margin) -> run; otherwise -> pause */
+          e.target.classList.toggle('anim-idle', !e.isIntersecting);
+        });
+      }, { rootMargin: '200px 0px 200px 0px', threshold: 0 });
+      animHosts.forEach(function (el) { animIO.observe(el); });
+    }
+  } catch (e) {}
 </script>
 </body>
 </html>
