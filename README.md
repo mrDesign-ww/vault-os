@@ -17,7 +17,7 @@ Supported: **macOS + Windows**.
 ## What's inside
 
 - **Curated Claude Code plugins** (~23) + the public [`claude-obsidian`](https://github.com/AgriciDaniel/claude-obsidian) plugin (wiki, save, canvas, lint, and more).
-- **Custom skills** (design, dev, review) + agents.
+- **Curated skills** (design, dev, review, PM, motion, GSAP, Atlassian) + agents.
 - **Isolated zones** — work / personal / clients never mix.
 - **Evolution system** — the vault tidies itself (Curator) and learns from friction (reflection).
 - **Optional add-ons:** Codex (design/ideas engine, wired to the same vault) and ECC (dev framework for code projects).
@@ -30,9 +30,9 @@ vault-os/
 ├── INSTALL.md            # instructions Claude follows on "install"
 ├── installer/            # quiz + platform install scripts
 └── shell/
-    ├── claude/           # settings template + 16 custom skills (incl. emil-design-eng)
-    ├── codex/            # Codex config template
-    └── vault-template/   # CLAUDE/AGENTS templates, PARA scaffold, evolution toolkit, .obsidian config
+    ├── claude/           # settings template + 35 curated skills (design, dev, review, PM, motion, GSAP)
+    ├── codex/            # Codex config + hooks templates
+    └── vault-template/   # CLAUDE/AGENTS templates, PARA scaffold, evolution toolkit (Claude + Codex), .obsidian config
 ```
 
 ## License

@@ -1,28 +1,30 @@
 ---
 name: evolution
-description: "Прогон самосовершенствования vault: Curator памяти, zone-aware wiki lint/fold, retrieval refresh, reflection на трейсах. Триггеры: прогони evolution, run evolution, гигиена vault, прибраться в vault, vault evolution, обнови индексы вики."
+description: "Прогон самосовершенствования общего vault: Claude memory, zone-aware wiki lint/fold, retrieval refresh и reflection по Claude-сессиям. Триггеры: прогони evolution, run evolution, гигиена vault, прибраться в vault, vault evolution, обнови индексы вики."
 ---
 
-# Vault Evolution
+# Vault Evolution for Claude
 
-Единый прогон гигиены и обучения vault. Запускается по SessionStart-нуджу (`health-check.py`) или вручную. НЕ автономный робот: деструктивные операции идут через апрув владельца.
+Единый прогон гигиены и обучения общего Claude + Codex vault. Запускается по SessionStart-нуджу или вручную через `/evolution`. Деструктивные операции требуют явного одобрения владельца.
 
 ## Как исполнять
 
-1. Прочитай авторитетный плейбук `.vault-meta/evolution/EVOLUTION.md` и следуй его фазам и ИНВАРИАНТАМ.
-2. Инварианты (жёстко): zone isolation (каждая зона раздельно, имена и пути зон из `mode.json`); `log.md` append-only (только fold, не редактировать); `hot.md` не трогать вживую; wiki-lock перед пакетными правками вики; никогда молчаливой записи в CLAUDE.md/память (только предложения на апрув); клиентские данные не слать наружу (retrieval `--no-llm`).
-3. Фазы по порядку: (1) Curator памяти → (2) zone-aware wiki гигиена → (3) retrieval refresh → (4) reflection (Tier 2, с гейтом `verifier` + апрув).
-4. По завершении обнови `.vault-meta/evolution/last-run.json` и дай владельцу краткий отчёт: что починено сразу, что ждёт апрува.
+1. Прочитай `.vault-meta/evolution/EVOLUTION.md` и следуй его фазам и инвариантам.
+2. Соблюдай zone isolation, append-only `log.md`, wiki-lock перед пакетными правками, запрет на внешний egress без разрешения и approval gate для изменений инструкций, памяти и skills.
+3. Для Claude используй команды без `--platform`: они сохраняют прежний Claude-режим.
+4. Одобренные межагентные факты, решения и уроки сохраняй в обычные PARA-страницы, индекс, log и hot. Не копируй внутренние Claude-memory или трейсы в Codex.
+5. Перед предложениями reflection используй `claude-obsidian:verifier`, затем запроси одобрение владельца.
+6. Обновляй `.vault-meta/evolution/last-run.json` только через `.vault-meta/evolution/update-last-run.py`.
 
-## Роли
+## Команды
 
-- Codex = дизайн/идеи (эскалация структурных проблем). Claude = реализация. Гейт = `claude-obsidian:verifier` + владелец. Codex НЕ критик.
-
-## Быстрые команды
-
-- Диагностика памяти: `python3 .vault-meta/evolution/memory-audit.py`
-- Вики-lint по зонам: `python3 .vault-meta/evolution/lint-scan.py` (dead классифицируй: memory-refs / Reference / реально-unresolved)
-- Сигналы трения (reflection): `python3 .vault-meta/evolution/trace-scan.py`
-- Повторяющиеся процедуры (кандидаты капсуляции): `python3 .vault-meta/evolution/trace-scan.py --repeats`
+- Claude memory audit: `python3 .vault-meta/evolution/memory-audit.py`
+- Wiki lint: `python3 .vault-meta/evolution/lint-scan.py`
+- Claude friction scan: `python3 .vault-meta/evolution/trace-scan.py`
+- Claude repeated procedures: `python3 .vault-meta/evolution/trace-scan.py --repeats`
+- Wiki lock: `bash scripts/wiki-lock.sh acquire .vault-meta/evolution/run`, затем `bash scripts/wiki-lock.sh release .vault-meta/evolution/run`
 - Retrieval refresh: `VAULT_ROOT="$PWD" bash <path-to-claude-obsidian-plugin>/bin/setup-retrieve.sh --no-llm`
-- Нудж-состояние: `python3 .vault-meta/evolution/health-check.py`
+- Claude nudge: `python3 .vault-meta/evolution/health-check.py`
+- State update: `python3 .vault-meta/evolution/update-last-run.py --platform claude --phase curator_memory=DATE --phase wiki_hygiene=DATE --phase retrieval_refresh=DATE --phase reflection=DATE --notes "SUMMARY"`
+
+Codex использует тот же playbook и state, но запускает platform-specific команды из `.agents/skills/evolution/SKILL.md`.

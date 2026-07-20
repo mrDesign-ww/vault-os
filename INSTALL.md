@@ -27,7 +27,7 @@ Install Obsidian if absent: macOS `brew install --cask obsidian`; Windows `winge
 ## 4. Vault
 
 1. Ask for the vault location (default: `~/Documents/<name-or-"Vault">`). If a vault already exists there, ask before proceeding.
-2. Copy `shell/vault-template/*` (including dotfiles: `.obsidian/`, `.vault-meta/`, `.claude/`, `.gitignore`) into the vault path.
+2. Copy `shell/vault-template/*` (including dotfiles: `.obsidian/`, `.vault-meta/`, `.claude/`, `.agents/`, `.gitignore`) into the vault path.
 3. Install the `claude-obsidian` plugin via marketplace **`AgriciDaniel/claude-obsidian`** → plugin `claude-obsidian@agricidaniel-claude-obsidian` (this is already enabled in the settings template).
 4. Run the plugin's own scaffolders on the vault: `bash <plugin>/bin/setup-vault.sh <vault>` then `bash <plugin>/bin/setup-mode.sh --mode para` (with cwd = vault). These create `.obsidian` config, PARA folders, and `wiki/{index,hot,log,overview}.md`.
 5. Generate `.vault-meta/mode.json` from `mode.template.json` + the quiz zones — see `installer/steps.md` §Zones. Create each extra zone's folders + starter `_index.md`/`log.md`/`hot.md`.
@@ -49,8 +49,9 @@ Generate the vault's `CLAUDE.md` from `shell/vault-template/CLAUDE.template.md`,
 
 1. Install the **Codex desktop app** (macOS: OpenAI download or `brew install --cask codex` if available; Windows: the app installer, else `npm install -g @openai/codex` with a note that the CLI's integration differs).
 2. The user signs in with their own OpenAI account (writes `~/.codex/auth.json` — never copy this).
-3. Back up `~/.codex/config.toml`, then merge the blocks from `shell/codex/config.template.toml` (the git-source marketplace + enable). `AGENTS.md` (step 7) provides the rules.
-4. Tell the user Codex will prompt to trust the vault + hooks on first open — that's expected.
+3. Back up `~/.codex/config.toml`, then merge the blocks from `shell/codex/config.template.toml` (the git-source marketplaces + plugin enables). Keep the user's existing keys; do NOT copy any `[hooks.state]` block — it is machine-specific.
+4. **Codex hooks — a different mechanism from Claude.** Claude keeps hooks inside `settings.json`; Codex reads them from a standalone `~/.codex/hooks.json`. Back up any existing `~/.codex/hooks.json`, then install `shell/codex/hooks.template.json` there, substituting `{{VAULT_PATH}}` with the absolute vault path. Never write `[hooks.state]` yourself.
+5. Tell the user Codex will prompt to trust the vault, the plugin hooks, and `~/.codex/hooks.json` on first open — that's expected. Codex records each hook's trust hash under `[hooks.state]` in `config.toml` at that moment (machine-specific, regenerated locally, never shipped).
 
 ## 9. ECC (only if chosen in the quiz)
 

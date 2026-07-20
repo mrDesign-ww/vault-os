@@ -16,6 +16,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 VAULT = os.path.abspath(os.path.join(HERE, "..", ".."))
 LAST_RUN = os.path.join(HERE, "last-run.json")
 AUDIT = os.path.join(HERE, "memory-audit.py")
+PLATFORM = os.environ.get("EVOLUTION_PLATFORM", "claude").strip().lower()
+if PLATFORM not in ("claude", "codex"):
+    PLATFORM = "claude"
 
 # Пороги нуджа
 DAYS_THRESHOLD = 7
@@ -26,23 +29,34 @@ RETRIEVAL_LAG_THRESHOLD = 40  # непроиндексированных стр�
 def days_since_last():
     try:
         with open(LAST_RUN, encoding="utf-8") as f:
-            last = json.load(f).get("last_run")
+            data = json.load(f)
+        platform_state = data.get("platforms", {}).get(PLATFORM)
+        if isinstance(platform_state, dict):
+            last = platform_state.get("last_run")
+        else:
+            last = data.get("last_run")
+        if not last:
+            return None, None
         d = datetime.date.fromisoformat(last)
         return (datetime.date.today() - d).days, last
     except Exception:
         return None, None
 
 
-def memory_orphans():
+def memory_health():
     try:
         out = subprocess.run(
-            [sys.executable, AUDIT, "--json"],
+            [sys.executable, AUDIT, "--platform", PLATFORM, "--json"],
             capture_output=True, text=True, timeout=15,
         ).stdout
         data = json.loads(out)
-        return len(data.get("orphans", [])), len(data.get("dead_links", []))
+        return (
+            len(data.get("orphans", [])),
+            len(data.get("dead_links", [])),
+            int(data.get("issue_count", 0)),
+        )
     except Exception:
-        return None, None
+        return None, None, None
 
 
 def log_lines():
@@ -75,11 +89,14 @@ def main():
     elif days >= DAYS_THRESHOLD:
         reasons.append("последняя гигиена %d дн. назад" % days)
 
-    orphans, dead = memory_orphans()
-    if orphans:
-        reasons.append("memory orphans: %d" % orphans)
-    if dead:
-        reasons.append("memory dead-links: %d" % dead)
+    orphans, dead, memory_issues = memory_health()
+    if PLATFORM == "claude":
+        if orphans:
+            reasons.append("memory orphans: %d" % orphans)
+        if dead:
+            reasons.append("memory dead-links: %d" % dead)
+    elif memory_issues:
+        reasons.append("Codex memory issues: %d" % memory_issues)
 
     lines = log_lines()
     if lines and lines > LOG_LINES_THRESHOLD:

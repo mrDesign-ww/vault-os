@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Hero.aiff 2>/dev/null || true"
+            "command": "afplay /System/Library/Sounds/Hero.aiff 2>/dev/null; afplay /System/Library/Sounds/Hero.aiff 2>/dev/null || true"
           }
         ]
       }
@@ -35,7 +35,10 @@
     "commit-commands@claude-plugins-official": true,
     "chrome-devtools-mcp@claude-plugins-official": true,
     "vercel@claude-plugins-official": true,
-    "obsidian@obsidian-skills": true
+    "obsidian@obsidian-skills": true,
+    "frontend-slides@frontend-slides": true,
+    "document-skills@anthropic-agent-skills": true,
+    "claude-video-vision@claude-video-vision": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -54,6 +57,24 @@
       "source": {
         "source": "github",
         "repo": "kepano/obsidian-skills"
+      }
+    },
+    "frontend-slides": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/zarazhangrui/frontend-slides.git"
+      }
+    },
+    "anthropic-agent-skills": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/anthropics/skills.git"
+      }
+    },
+    "claude-video-vision": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/jordanrendric/claude-video-vision.git"
       }
     }
   },

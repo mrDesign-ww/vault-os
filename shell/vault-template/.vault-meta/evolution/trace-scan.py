@@ -5,7 +5,7 @@
 не tool_result) и помечает те, что похожи на поправку / повтор инструкции / откат / вызов.
 
 Это только СЫРЫЕ КАНДИДАТЫ. Суждение (реальный ли это урок и какую правку он требует)
-делает Claude в reflection-фазе, и любое изменение CLAUDE.md/памяти/скилла идёт через
+делает агент в reflection-фазе, и любое изменение инструкций/памяти/скилла идёт через
 verifier + апрув владельца. Скрипт ничего не меняет.
 """
 import argparse
@@ -24,7 +24,8 @@ def _default_trace_dir():
     return os.path.join(os.path.expanduser("~"), ".claude", "projects", slug)
 
 
-DEFAULT_DIR = _default_trace_dir()
+CLAUDE_DEFAULT_DIR = _default_trace_dir()
+CODEX_DEFAULT_DIR = os.path.expanduser("~/.codex/sessions")
 
 FRICTION = [
     (re.compile(r"я же (говорил|сказал|просил|писал)", re.I), "repeat-instruction"),
@@ -39,23 +40,33 @@ FRICTION = [
 SKIP_PREFIXES = ("<local-command", "<command-name>", "<system-reminder", "<bash-", "caveat:")
 
 
-def real_user_text(obj):
-    if obj.get("type") != "user":
-        return None
-    msg = obj.get("message", {}) or {}
-    if msg.get("role") != "user":
-        return None
-    c = msg.get("content")
-    if isinstance(c, str):
-        s = c
-    elif isinstance(c, list):
-        parts = [b.get("text", "") for b in c
-                 if isinstance(b, dict) and b.get("type") == "text"]
-        if not parts:
-            return None  # tool_result-only — не сообщение владельца
-        s = " ".join(parts)
+def real_user_text(obj, platform="claude"):
+    if platform == "codex":
+        if obj.get("type") != "event_msg":
+            return None
+        payload = obj.get("payload", {}) or {}
+        if payload.get("type") != "user_message":
+            return None
+        s = payload.get("message")
+        if not isinstance(s, str):
+            return None
     else:
-        return None
+        if obj.get("type") != "user":
+            return None
+        msg = obj.get("message", {}) or {}
+        if msg.get("role") != "user":
+            return None
+        c = msg.get("content")
+        if isinstance(c, str):
+            s = c
+        elif isinstance(c, list):
+            parts = [b.get("text", "") for b in c
+                     if isinstance(b, dict) and b.get("type") == "text"]
+            if not parts:
+                return None
+            s = " ".join(parts)
+        else:
+            return None
     s = " ".join(s.split()).strip()
     if not s:
         return None
@@ -67,14 +78,16 @@ def real_user_text(obj):
         return None
     if "this session is being continued" in sl or "base directory for this skill" in sl:
         return None
-    if "image source" in sl or "image-cache" in sl or os.path.expanduser("~").lower() in sl:
+    if platform == "claude" and (
+        "image source" in sl or "image-cache" in sl or "/users/" in sl
+    ):
         return None
     if "triggers on:" in sl or "skill tool" in sl or "usage —" in sl or "description:" in sl:
         return None
     return s
 
 
-def scan_file(path):
+def scan_file(path, platform="claude"):
     hits = []
     try:
         with open(path, encoding="utf-8") as f:
@@ -86,7 +99,7 @@ def scan_file(path):
                     obj = json.loads(line)
                 except ValueError:
                     continue
-                s = real_user_text(obj)
+                s = real_user_text(obj, platform)
                 if not s:
                     continue
                 for rx, kind in FRICTION:
@@ -111,7 +124,7 @@ session content analyze full same name note already read summary being continued
 TERM = re.compile(r"[a-zа-яё0-9]{4,}", re.I)
 
 
-def session_terms(path, max_msgs=3):
+def session_terms(path, platform="claude", max_msgs=3):
     """Термы/биграммы из ПЕРВЫХ max_msgs реальных сообщений сессии (её намерение, не весь шум)."""
     words = []
     count = 0
@@ -122,7 +135,7 @@ def session_terms(path, max_msgs=3):
                     obj = json.loads(line)
                 except ValueError:
                     continue
-                s = real_user_text(obj)
+                s = real_user_text(obj, platform)
                 if not s:
                     continue
                 count += 1
@@ -139,12 +152,12 @@ def session_terms(path, max_msgs=3):
     return terms | bigrams
 
 
-def scan_repeats(files, min_sessions=3):
+def scan_repeats(files, platform="claude", min_sessions=3):
     """Термы/биграммы, встречающиеся в >= min_sessions РАЗНЫХ сессий — кандидаты процедур."""
     from collections import Counter
     counter = Counter()
     for p in files:
-        for t in session_terms(p):
+        for t in session_terms(p, platform):
             counter[t] += 1
     # биграммы информативнее униграмм; поднимем их и отфильтруем по порогу
     cand = [(t, n) for t, n in counter.items() if n >= min_sessions]
@@ -152,17 +165,35 @@ def scan_repeats(files, min_sessions=3):
     return cand
 
 
+def session_label(path, platform):
+    stem = os.path.splitext(os.path.basename(path))[0]
+    if platform == "codex":
+        match = re.search(
+            r"([0-9a-f]{8})-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            stem,
+            re.I,
+        )
+        if match:
+            return match.group(1)
+    return stem[:8]
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", default=DEFAULT_DIR)
+    ap.add_argument("--platform", choices=("claude", "codex"), default="claude")
+    ap.add_argument("--dir")
     ap.add_argument("--sessions", type=int, default=8, help="последних N сессий по mtime (для трения)")
     ap.add_argument("--repeats", action="store_true", help="+ детект повторяющихся процедур (кандидаты капсуляции)")
     ap.add_argument("--min-sessions", type=int, default=3, help="порог повтора для капсуляции")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
+    trace_dir = args.dir or (CODEX_DEFAULT_DIR if args.platform == "codex" else CLAUDE_DEFAULT_DIR)
+    pattern = (os.path.join(trace_dir, "**", "*.jsonl")
+               if args.platform == "codex" else os.path.join(trace_dir, "*.jsonl"))
+
     all_files = sorted(
-        glob.glob(os.path.join(args.dir, "*.jsonl")),
+        glob.glob(pattern, recursive=args.platform == "codex"),
         key=lambda p: os.path.getmtime(p),
         reverse=True,
     )
@@ -170,18 +201,23 @@ def main():
 
     report = []
     for p in files:
-        hits = scan_file(p)
+        hits = scan_file(p, args.platform)
         if hits:
             mtime = datetime.date.fromtimestamp(os.path.getmtime(p)).isoformat()
-            report.append({"session": os.path.basename(p)[:8], "date": mtime, "signals": hits})
+            report.append({
+                "session": session_label(p, args.platform),
+                "date": mtime,
+                "signals": hits,
+            })
 
     total = sum(len(r["signals"]) for r in report)
 
     if args.json:
-        out = {"sessions_scanned": len(files), "signal_count": total, "sessions": report}
+        out = {"platform": args.platform, "dir": trace_dir,
+               "sessions_scanned": len(files), "signal_count": total, "sessions": report}
         if args.repeats:
             out["repeats"] = [{"term": t, "sessions": n}
-                              for t, n in scan_repeats(all_files, args.min_sessions)]
+                              for t, n in scan_repeats(all_files, args.platform, args.min_sessions)]
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0
 
@@ -192,10 +228,10 @@ def main():
         for h in r["signals"]:
             print("  %-18s %s" % (h["kind"] + ":", h["quote"]))
     print("\nNOTE: сырые кандидаты. В reflection-фазе оцени каждый: реальный ли урок ->")
-    print("      предложение правки CLAUDE.md / памяти / скилла через verifier + апрув владельца.")
+    print("      предложение правки инструкций / wiki / skill через verifier + апрув владельца.")
 
     if args.repeats:
-        cand = scan_repeats(all_files, args.min_sessions)
+        cand = scan_repeats(all_files, args.platform, args.min_sessions)
         print("\n=== REPEATED PROCEDURES (capsule candidates, >= %d sessions) ===" % args.min_sessions)
         print("scanned %d sessions | %d recurring terms/bigrams" % (len(all_files), len(cand)))
         for t, n in cand[:25]:

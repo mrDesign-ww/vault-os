@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vault_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; [ \"$vault_root\" = \"{{VAULT_PATH}}\" ] || exit 0; [ -f \"$vault_root/wiki/hot.md\" ] && cat \"$vault_root/wiki/hot.md\" || true",
+            "timeout": 10,
+            "statusMessage": "Reloading vault context"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Hero.aiff 2>/dev/null; afplay /System/Library/Sounds/Hero.aiff 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

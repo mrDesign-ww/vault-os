@@ -16,19 +16,21 @@ import datetime
 import json
 import os
 import re
+import sqlite3
 import sys
 
 def _default_memory_dir():
     """Claude Code memory dir for this vault: ~/.claude/projects/<slug>/memory,
-    where <slug> is the vault's absolute path with '/' and spaces turned into '-'.
-    Override with the VAULT_ROOT env var; otherwise derive from this file's location."""
+    where <slug> is the vault path with '/' and spaces turned into '-'.
+    Override with VAULT_ROOT; otherwise derive from this file's location."""
     vault = os.environ.get("VAULT_ROOT") or os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", ".."))
     slug = re.sub(r"[ /]", "-", vault.rstrip("/"))
     return os.path.join(os.path.expanduser("~"), ".claude", "projects", slug, "memory")
 
 
-DEFAULT_DIR = _default_memory_dir()
+CLAUDE_DEFAULT_DIR = _default_memory_dir()
+CODEX_DEFAULT_DB = os.path.expanduser("~/.codex/memories_1.sqlite")
 INDEX_NAME = "MEMORY.md"
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")
 STATUS_RE = re.compile(
@@ -76,15 +78,76 @@ def age_days(path, today):
     return (today - mtime).days
 
 
+def audit_codex(db_path):
+    """Read-only health audit for Codex's generated local memory database."""
+    if not os.path.isfile(db_path):
+        raise FileNotFoundError("Codex memory DB not found: %s" % db_path)
+    conn = sqlite3.connect("file:%s?mode=ro" % db_path, uri=True)
+    try:
+        integrity_rows = conn.execute("PRAGMA quick_check").fetchall()
+        integrity = [row[0] for row in integrity_rows]
+        memories = conn.execute("SELECT COUNT(*) FROM stage1_outputs").fetchone()[0]
+        selected = conn.execute(
+            "SELECT COUNT(*) FROM stage1_outputs WHERE selected_for_phase2 = 1"
+        ).fetchone()[0]
+        empty_rows = conn.execute(
+            "SELECT COUNT(*) FROM stage1_outputs "
+            "WHERE TRIM(raw_memory) = '' OR TRIM(rollout_summary) = ''"
+        ).fetchone()[0]
+        job_rows = conn.execute(
+            "SELECT status, COUNT(*) FROM jobs GROUP BY status ORDER BY status"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    integrity_ok = integrity == ["ok"]
+    return {
+        "platform": "codex",
+        "dir": db_path,
+        "integrity": integrity,
+        "memories": memories,
+        "selected_for_phase2": selected,
+        "empty_rows": empty_rows,
+        "jobs": {status: count for status, count in job_rows},
+        "orphans": [],
+        "dead_links": [],
+        "frontmatter_gaps": {},
+        "stale": [],
+        "status_stale": [],
+        "consolidation_candidates": {},
+        "issue_count": (0 if integrity_ok else 1) + empty_rows,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", default=DEFAULT_DIR)
+    ap.add_argument("--platform", choices=("claude", "codex"), default="claude")
+    ap.add_argument("--dir", help="Claude memory dir or Codex memory SQLite path")
     ap.add_argument("--stale-days", type=int, default=30)
     ap.add_argument("--cluster-min", type=int, default=4)
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
-    mem_dir = args.dir
+    if args.platform == "codex":
+        db_path = args.dir or CODEX_DEFAULT_DB
+        try:
+            result = audit_codex(db_path)
+        except (OSError, sqlite3.Error) as exc:
+            print("ERR: %s" % exc, file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        print("=== CODEX MEMORY AUDIT ===")
+        print("db:        %s" % db_path)
+        print("integrity: %s" % ", ".join(result["integrity"]))
+        print("memories:  %d  |  selected phase 2: %d  |  empty rows: %d"
+              % (result["memories"], result["selected_for_phase2"], result["empty_rows"]))
+        print("jobs:      %s" % (result["jobs"] or "none"))
+        print("summary:   %d hard issues" % result["issue_count"])
+        return 0
+
+    mem_dir = args.dir or CLAUDE_DEFAULT_DIR
     index_path = os.path.join(mem_dir, INDEX_NAME)
     if not os.path.isdir(mem_dir):
         print("ERR: memory dir not found: %s" % mem_dir, file=sys.stderr)
@@ -127,6 +190,7 @@ def main():
     }
 
     result = {
+        "platform": "claude",
         "dir": mem_dir,
         "files": len(files),
         "indexed": len(indexed),
