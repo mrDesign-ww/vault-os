@@ -3,6 +3,8 @@ filters:
     - file.inFolder("wiki/")
     - not:
         - file.inFolder("wiki/personal")
+    - not:
+        - file.inFolder("wiki/client")
     - file.name != "Command Center"
 formulas:
   age_days: (now() - file.mtime).days.round(0)

@@ -1,8 +1,10 @@
 ---
 type: dashboard
 status: evergreen
-created: 2026-06-27
-updated: 2026-06-27
+created: {{DATE}}
+updated: {{DATE}}
+memory_level: l2
+memory_provenance: "work-zone PARA folders and frontmatter status fields"
 tags: [dashboard]
 ---
 # Work — Control Panel

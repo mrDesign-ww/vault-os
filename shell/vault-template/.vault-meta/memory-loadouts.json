@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "default": "general",
+  "roles": {
+    "general": {
+      "description": "Balanced work-zone context for ordinary tasks.",
+      "project_required": false,
+      "levels": ["l1", "l2"],
+      "allow_l0": true,
+      "max_items": 8,
+      "max_chars": 4200,
+      "snippet_chars": 500,
+      "per_level": {"l0": 2, "l1": 3, "l2": 6},
+      "l3_max_items": 4,
+      "type_boosts": {"project": 1.08, "decision": 1.1, "synthesis": 1.08},
+      "pinned_skills": []
+    },
+    "designer": {
+      "description": "Project-scoped product, UX and visual decision context.",
+      "project_required": true,
+      "levels": ["l1", "l2"],
+      "allow_l0": true,
+      "max_items": 8,
+      "max_chars": 4400,
+      "snippet_chars": 520,
+      "per_level": {"l0": 2, "l1": 3, "l2": 6},
+      "l3_max_items": 4,
+      "type_boosts": {
+        "design-concept": 1.18,
+        "design-decision": 1.2,
+        "design-spec": 1.18,
+        "product-design": 1.16,
+        "research": 1.1,
+        "handoff": 1.12
+      },
+      "pinned_skills": []
+    },
+    "builder": {
+      "description": "Project-scoped implementation, architecture and handoff context.",
+      "project_required": true,
+      "levels": ["l1", "l2"],
+      "allow_l0": true,
+      "max_items": 8,
+      "max_chars": 4600,
+      "snippet_chars": 540,
+      "per_level": {"l0": 2, "l1": 3, "l2": 6},
+      "l3_max_items": 4,
+      "type_boosts": {
+        "architecture": 1.2,
+        "implementation": 1.2,
+        "implementation-handoff": 1.2,
+        "implementation-state": 1.18,
+        "specification": 1.16,
+        "handoff": 1.14
+      },
+      "pinned_skills": []
+    },
+    "researcher": {
+      "description": "Cross-project research and synthesis with explicit evidence drill-down.",
+      "project_required": false,
+      "levels": ["l1", "l2"],
+      "allow_l0": true,
+      "max_items": 8,
+      "max_chars": 5000,
+      "snippet_chars": 600,
+      "per_level": {"l0": 3, "l1": 4, "l2": 5},
+      "l3_max_items": 4,
+      "type_boosts": {"research": 1.2, "analysis": 1.16, "synthesis": 1.18, "audit": 1.12},
+      "pinned_skills": []
+    },
+    "reviewer": {
+      "description": "Project-scoped current-state, acceptance and adversarial review context.",
+      "project_required": true,
+      "levels": ["l1", "l2"],
+      "allow_l0": true,
+      "max_items": 8,
+      "max_chars": 4200,
+      "snippet_chars": 500,
+      "per_level": {"l0": 2, "l1": 3, "l2": 6},
+      "l3_max_items": 4,
+      "type_boosts": {
+        "audit": 1.2,
+        "design-audit": 1.2,
+        "design-review": 1.18,
+        "acceptance": 1.18,
+        "specification": 1.12,
+        "architecture": 1.12
+      },
+      "pinned_skills": [".agents/skills/evolution-verifier/SKILL.md"]
+    }
+  }
+}

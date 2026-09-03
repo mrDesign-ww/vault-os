@@ -1,0 +1,45 @@
+.DS_Store
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+.trash/
+__pycache__/
+*.pyc
+
+# Credentials and machine-local configuration.
+.env
+.env.*
+auth.json
+**/settings.local.json
+**/.mcp.json
+
+# Regenerable retrieval payload. Keep the small Git authority receipts.
+.vault-meta/memory-index/*
+!.vault-meta/memory-index/*.authority.json
+.vault-meta/chunks/
+.vault-meta/bm25/
+.vault-meta/embed-cache.json
+
+# Locks, lifecycle traces, and run state stay local.
+.vault-meta/*.lock
+.vault-meta/**/*.lock
+.vault-meta/locks/
+.vault-meta/locks-v2/
+.vault-meta/.wiki-lock.meta
+.vault-meta/write/
+.vault-meta/hook.log
+.vault-meta/evolution/__pycache__/
+.vault-meta/evolution/last-run.json
+.vault-meta/evolution/trace-open/
+.vault-meta/evolution/trace-completions/
+.vault-meta/evolution/trace-manifests/
+.vault-meta/evolution/trace-scan-receipts/
+.vault-meta/evolution/trace-selection-receipts/
+.vault-meta/evolution/reflection-dispositions/
+
+# Installer and audit scratch.
+*.backup-*
+.review-tmp/
+.playwright-mcp/
+test-results*/
+tmp/

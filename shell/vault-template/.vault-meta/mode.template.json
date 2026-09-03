@@ -1,7 +1,22 @@
 {
   "schema_version": 1,
   "mode": "para",
-  "configured_at": "{{DATE}}",
+  "configured_at": "{{DATE}}T00:00:00Z",
+  "memory_model": {
+    "schema_version": 1,
+    "model": "l0-l3",
+    "field": "memory_level",
+    "levels": ["l0", "l1", "l2", "l3"],
+    "legacy_inference": true,
+    "l3_requires_owner_approval": true,
+    "owner": "{{OWNER_NAME}}",
+    "approval_manifest": ".vault-meta/memory-approvals.json",
+    "loadout_manifest": ".vault-meta/memory-loadouts.json",
+    "context_budgets": true,
+    "candidate_inbox": true,
+    "hot_role": "cache",
+    "source_of_truth": "obsidian"
+  },
   "config": {
     "para": {
       "projects_folder": "wiki/workspace/projects/",
@@ -17,16 +32,17 @@
     "isolation": "strict",
     "work": {
       "label": "Work",
+      "root": "wiki",
       "index": "wiki/index.md",
       "log": "wiki/log.md",
       "hot": "wiki/hot.md",
       "projects_folder": "wiki/workspace/projects/",
+      "inbox_folder": "wiki/workspace/projects/inbox/",
       "areas_folder": "wiki/areas/",
       "resources_folder": "wiki/resources/",
       "archives_folder": "wiki/archives/"
     },
-    "_installer_note": "For EACH extra zone from the quiz, add one block keyed by a slug (e.g. 'personal', 'acme'): { label, root: 'wiki/<slug>/', index: 'wiki/<slug>/_index.md', log: 'wiki/<slug>/log.md', hot: 'wiki/<slug>/hot.md', projects_folder: 'wiki/<slug>/projects/', inbox_folder: 'wiki/<slug>/inbox/' }. Create those folders + a starter _index.md/log.md/hot.md. Mirror the zone names + switch phrases into CLAUDE.md/AGENTS.md.",
-    "_example_extra_zone": {
+    "personal": {
       "label": "Personal",
       "root": "wiki/personal/",
       "index": "wiki/personal/_index.md",
@@ -35,9 +51,22 @@
       "projects_folder": "wiki/personal/projects/",
       "inbox_folder": "wiki/personal/inbox/"
     },
+    "client": {
+      "label": "{{CLIENT_LABEL}}",
+      "root": "wiki/client/",
+      "index": "wiki/client/_index.md",
+      "log": "wiki/client/log.md",
+      "hot": "wiki/client/hot.md",
+      "projects_folder": "wiki/client/projects/",
+      "inbox_folder": "wiki/client/inbox/"
+    },
     "switch": {
-      "_installer_note": "Generate phrases per zone in the chosen language. Each extra zone gets to_<slug> (array of phrases) and an optional oneoff_<slug>_prefix. Always include to_work.",
-      "to_work": ["switch to work", "back to work", "work zone"]
+      "to_personal": ["switch to personal", "personal mode"],
+      "to_client": ["switch to client", "client mode"],
+      "to_work": ["switch to work", "back to work", "work mode"],
+      "oneoff_personal_prefix": "personal:",
+      "oneoff_client_prefix": "client:"
     }
-  }
+  },
+  "updated_at": "{{DATE}}T00:00:00Z"
 }

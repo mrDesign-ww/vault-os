@@ -2,8 +2,10 @@
 type: reference
 title: "Obsidian Plugins"
 status: evergreen
-created: 2026-06-01
-updated: 2026-06-01
+created: {{DATE}}
+updated: {{DATE}}
+memory_level: l1
+memory_provenance: "bundled Obsidian plugin reference"
 tags:
   - reference
   - cheatsheet
