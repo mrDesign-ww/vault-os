@@ -19,17 +19,7 @@ import re
 import sqlite3
 import sys
 
-def _default_memory_dir():
-    """Claude Code memory dir for this vault: ~/.claude/projects/<slug>/memory,
-    where <slug> is the vault path with '/' and spaces turned into '-'.
-    Override with VAULT_ROOT; otherwise derive from this file's location."""
-    vault = os.environ.get("VAULT_ROOT") or os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", ".."))
-    slug = re.sub(r"[ /]", "-", vault.rstrip("/"))
-    return os.path.join(os.path.expanduser("~"), ".claude", "projects", slug, "memory")
-
-
-CLAUDE_DEFAULT_DIR = _default_memory_dir()
+CLAUDE_DEFAULT_DIR = "{{CLAUDE_TRACE_PATH}}/memory"
 CODEX_DEFAULT_DB = os.path.expanduser("~/.codex/memories_1.sqlite")
 INDEX_NAME = "MEMORY.md"
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")
@@ -67,7 +57,7 @@ def frontmatter_gaps(path):
 
 
 def cluster_key(name):
-    """Первые два дефис-сегмента как ключ кластера (project-x-build-status -> project-x)."""
+    """Первые два дефис-сегмента как ключ кластера (project-alpha-build-status -> project-alpha)."""
     stem = name[:-3] if name.endswith(".md") else name
     parts = stem.split("-")
     return "-".join(parts[:2]) if len(parts) >= 2 else stem
@@ -82,7 +72,9 @@ def audit_codex(db_path):
     """Read-only health audit for Codex's generated local memory database."""
     if not os.path.isfile(db_path):
         raise FileNotFoundError("Codex memory DB not found: %s" % db_path)
-    conn = sqlite3.connect("file:%s?mode=ro" % db_path, uri=True)
+    # immutable=1 prevents SQLite from creating lock or journal files beside the
+    # generated DB, which is required in Codex's read-only sandbox.
+    conn = sqlite3.connect("file:%s?mode=ro&immutable=1" % db_path, uri=True)
     try:
         integrity_rows = conn.execute("PRAGMA quick_check").fetchall()
         integrity = [row[0] for row in integrity_rows]

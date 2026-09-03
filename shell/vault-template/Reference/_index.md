@@ -1,7 +1,10 @@
 ---
 type: meta
 title: "Reference"
-updated: 2026-06-01
+created: {{DATE}}
+updated: {{DATE}}
+memory_level: l1
+memory_provenance: "bundled Vault OS reference pages"
 tags:
   - meta
   - index

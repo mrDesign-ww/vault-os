@@ -11,9 +11,7 @@
 # it is machine- and content-specific and regenerates via Codex's trust prompt when
 # the teammate first opens the vault.
 
-model = "gpt-5.5"                 # set to whichever model your Codex account offers
-model_reasoning_effort = "high"
-service_tier = "default"
+# Keep the user's current model, reasoning effort, and service tier.
 
 # --- Marketplaces (public git sources; Codex clones and caches them) ---------
 # The public claude-obsidian plugin gives Codex the same wiki skills, commands,
@@ -28,6 +26,22 @@ source = "https://github.com/AgriciDaniel/claude-obsidian.git"
 [marketplaces.claude-plugins-official]
 source_type = "git"
 source = "https://github.com/anthropics/claude-plugins-official.git"
+
+[marketplaces.ponytail]
+source_type = "git"
+source = "https://github.com/DietrichGebert/ponytail.git"
+
+[marketplaces.i-have-adhd]
+source_type = "git"
+source = "https://github.com/ayghri/i-have-adhd.git"
+
+[marketplaces.hyperframes]
+source_type = "git"
+source = "https://github.com/heygen-com/hyperframes.git"
+
+[marketplaces.last30days-skill]
+source_type = "git"
+source = "https://github.com/mvanhorn/last30days-skill.git"
 
 # --- Plugins (mirror of the Claude side; enable/disable to taste) ------------
 [plugins."claude-obsidian@agricidaniel-claude-obsidian"]
@@ -88,6 +102,18 @@ enabled = true
 enabled = true
 
 [plugins."vercel@claude-plugins-official"]
+enabled = true
+
+[plugins."ponytail@ponytail"]
+enabled = true
+
+[plugins."i-have-adhd@i-have-adhd"]
+enabled = true
+
+[plugins."hyperframes@hyperframes"]
+enabled = true
+
+[plugins."last30days@last30days-skill"]
 enabled = true
 
 # The vault's AGENTS.md (Codex mirror of CLAUDE.md) supplies the operating rules.

@@ -1,4 +1,4 @@
-# Vault OS — Windows platform helpers. Claude calls these functions during install.
+# Windows host helpers. Run the full hardened Vault OS runtime through WSL.
 # Usage: powershell -File install-windows.ps1 -Fn <function> [-Arg1 x -Arg2 y]
 
 function Ensure-Prereqs {

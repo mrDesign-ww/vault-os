@@ -1,41 +1,46 @@
-# Installer steps — generation detail
+# Installer reference
 
-## Zones → mode.json + folders
+## What the renderer creates
 
-Start from `shell/vault-template/.vault-meta/mode.template.json`. Replace `{{DATE}}` (`configured_at`) with today, and drop the `_installer_note` / `_example_extra_zone` helper keys in the final file. For EACH extra zone the user named:
+`installer/render-vault.py` copies only the public empty template. It creates work, personal, and client PARA zones, renders `CLAUDE.md`, `AGENTS.md`, and `mode.json`, then binds the current L0-L3 memory and autonomous-reflection trust chain to the new owner and absolute vault path.
 
-- `slug` = lowercase, spaces → `-`.
-- Add a zone block under `zones`:
-  ```json
-  "<slug>": {
-    "label": "<Name>",
-    "root": "wiki/<slug>/",
-    "index": "wiki/<slug>/_index.md",
-    "log": "wiki/<slug>/log.md",
-    "hot": "wiki/<slug>/hot.md",
-    "projects_folder": "wiki/<slug>/projects/",
-    "inbox_folder": "wiki/<slug>/inbox/"
-  }
-  ```
-- Under `zones.switch`, add `"to_<slug>": [<phrases in the chosen language>]` and optionally `"oneoff_<slug>_prefix": "<word>:"`.
-- Create folders `wiki/<slug>/{projects,inbox}` and starter `_index.md`, `log.md`, `hot.md` (minimal frontmatter, empty body).
+The renderer uses only the Python standard library. It refuses non-empty targets and requires the explicit `--approve-memory-policy` flag.
 
-The evolution scripts read zones from `mode.json` at runtime — no code edits needed per zone.
+## Global configuration merge
 
-## Rules → CLAUDE.md / AGENTS.md
+Before changing either global file:
 
-Fill `shell/vault-template/CLAUDE.template.md`:
-- `{{VAULT_TITLE}}` → e.g. `"<Name>'s Vault"`.
-- `{{OWNER_NAME}}` → quiz name. `{{DATE}}` → today (YYYY-MM-DD).
-- `{{ZONE_FOLDERS}}` → tree lines for each extra zone, e.g. `├── <slug>/           # <Name> zone (isolated)`.
-- `{{ZONE_LIST}}` → `work` + extra names joined.
-- `{{ZONE_DEFINITIONS}}` → one bullet per extra zone: name, `root: wiki/<slug>/`, its switch phrase.
-- `{{ZONE_SWITCH_PHRASES}}` → a short block listing each zone's switch phrase in the chosen language.
+- copy `~/.claude/settings.json` to a timestamped backup;
+- copy `~/.codex/config.toml` and `~/.codex/hooks.json` to timestamped backups;
+- merge only documented public marketplace, plugin, language, and hook fields;
+- preserve all unrelated user settings;
+- never copy auth files, secrets, MCP servers, local marketplace paths, notification executables, project trust entries, or hook trust hashes.
 
-Then write `AGENTS.md` = the same rendered file with `Claude` → `Codex` (leave `claude-obsidian` plugin names and file names intact). This is the Codex mirror.
+## ECC, optional
 
-## Backups (before any overwrite)
+Install ECC only inside the selected code project:
 
-- `~/.claude/settings.json` → `~/.claude/settings.json.backup-<YYYYMMDD-HHMMSS>` before merging the template.
-- `~/.codex/config.toml` → same pattern, before merging the Codex blocks.
-- If the target vault path already exists and is non-empty, STOP and ask the user.
+```bash
+cd "/absolute/path/to/code-project"
+git clone https://github.com/affaan-m/ECC .ecc-src
+cd .ecc-src
+npm install --omit=dev --ignore-scripts
+node scripts/install-apply.js --profile core \
+  --with lang:typescript --with framework:react --with framework:nextjs \
+  --with capability:database --with capability:security --with capability:research \
+  --target claude-project
+cd ..
+rm -rf .ecc-src
+```
+
+Confirm the exact target before removing `.ecc-src`. ECC is never installed globally and never copied into the vault.
+
+## Verification
+
+The supported repository check is:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+It renders a fresh vault, validates the reflection policy, initializes local Git, builds and validates all three memory indexes under zone locks, checkpoints the authority receipts, and performs a live retrieval acceptance query.

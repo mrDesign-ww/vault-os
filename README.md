@@ -1,77 +1,102 @@
 <h1 align="center">🗄️ Vault OS</h1>
 
 <p align="center">
-  <em>Persistent memory, curated skills, and a self-improving vault<br>for <b>Claude Code + Obsidian</b> — the setup its author uses daily, packaged for a teammate.</em>
+  <em>A private, persistent Obsidian memory system for Claude Code and Codex.</em>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-1f1f1f.svg"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-4b7bec.svg">
-  <img alt="For Claude Code + Obsidian" src="https://img.shields.io/badge/for-Claude%20Code%20%2B%20Obsidian-6f56d9.svg">
+  <img alt="Platform" src="https://img.shields.io/badge/full%20runtime-macOS%20%7C%20Linux-4b7bec.svg">
+  <img alt="For Claude Code, Codex, and Obsidian" src="https://img.shields.io/badge/for-Claude%20Code%20%2B%20Codex%20%2B%20Obsidian-6f56d9.svg">
   <a href="https://mrdesign-ww.github.io/vault-os/"><img alt="Live walkthrough" src="https://img.shields.io/badge/walkthrough-live-2ecc71.svg"></a>
 </p>
 
----
+Vault OS turns a local Obsidian vault into durable, trust-aware memory for AI work. PARA controls where knowledge lives. L0-L3 controls how evidence, facts, project state, and owner policy are trusted. Work, personal, and client zones remain isolated.
 
-Claude Code is brilliant in the moment but forgetful between sessions. **Vault OS** gives it a memory that compounds: a PARA-structured Obsidian wiki, a curated toolbelt of skills and agents, isolated work zones that never bleed into each other, and a self-improvement loop that keeps the whole thing tidy. Drop a source, ask a question — the knowledge sticks and grows.
+> [!IMPORTANT]
+> This repository contains an empty, parameterized template. It includes no projects, notes, session traces, accounts, tokens, private paths, or client material.
 
-> [!NOTE]
-> **The shell ships zero personal data.** No projects, memory, tokens, or client work — only configuration templates and an empty scaffold. Your teammate installs it and fills it with *their* work.
+## What changed in the current release
 
-## ✨ Why Vault OS
+- A fail-closed, zone-scoped L0-L3 memory resolver with role-based context budgets.
+- Git-checkpointed index authority, page-hash snapshots, and shared zone write locks.
+- Candidate memory that keeps unverified inferences out of canonical retrieval.
+- Crash-safe Claude and Codex turn lifecycle tracking.
+- Work-only autonomous reflection with immutable evidence, selection, disposition, and processed receipts.
+- Exact owner approval and SHA-256 binding for L3 doctrine. Reflection can never approve L3.
+- 150 bundled skills and 29 optional Claude plugin entries.
+- A deterministic, standard-library installer that refuses non-empty targets and renders all owner and machine-specific identities locally.
 
-- **It remembers.** A persistent wiki becomes Claude's long-term memory across every session.
-- **It comes loaded.** ~23 curated plugins and 35 skills for design, dev, review, PM, and motion — wired in on install.
-- **It stays clean.** Work / personal / client zones are fully isolated and never cross-link.
-- **It improves itself.** An evolution loop tidies the vault (Curator) and learns from friction (reflection) — with a human in the loop for every destructive step.
-- **Two brains, one vault.** Optional Codex add-on shares the same memory, skills, and hooks as the Claude side.
+## Install
 
-## 🚀 Install
+Open Claude Code and say:
 
-1. Open **Claude Code**.
-2. Say: **“install `https://github.com/mrDesign-ww/vault-os`”**.
-3. Answer a short quiz — your name, language, work zones, and optional Codex / ECC.
+```text
+Install https://github.com/mrDesign-ww/vault-os
+```
 
-Everything auto-installs: Obsidian, plugins, skills, agents, rules, hooks, the PARA vault, and a launch shortcut. Prefer a friendly tour first? **[See the walkthrough →](https://mrdesign-ww.github.io/vault-os/)**
+Claude follows [`INSTALL.md`](INSTALL.md), asks a short trust and setup quiz, then creates a new private vault. The full hardened runtime currently supports macOS and Linux. Windows users can run it through WSL.
 
-Supported: **macOS** and **Windows**.
+For a direct test render:
 
-## 📦 What's inside
+```bash
+python3 installer/render-vault.py \
+  --target "/absolute/path/to/new-vault" \
+  --owner "Owner Name" \
+  --title "Vault Title" \
+  --client-label "Client" \
+  --approve-memory-policy
+```
 
-| Layer | What you get |
+The approval flag must only be used after the owner explicitly approves the bundled L3 doctrine during installation.
+
+## System layers
+
+| Layer | Included |
 | --- | --- |
-| **Plugins** | ~23 curated Claude Code plugins + the public [`claude-obsidian`](https://github.com/AgriciDaniel/claude-obsidian) plugin (wiki, save, canvas, lint, and more) |
-| **Skills** | 35 curated skills — design, dev, review, PM, motion, GSAP, Atlassian — plus agents |
-| **Zones** | Isolated work / personal / client spaces that never mix |
-| **Evolution** | A self-tidying vault that learns from friction — Claude `/evolution`, Codex `$evolution` |
-| **Codex** *(optional)* | A design/ideas engine wired to the same vault: config, hooks, and skill parity |
-| **ECC** *(optional)* | A dev framework for code projects — project-scoped, never global |
+| Vault | Empty PARA scaffold with work, personal, and client zones |
+| Memory | L0 evidence, L1 verified facts, L2 canonical scenarios, owner-approved L3 policy |
+| Retrieval | Separate local index per zone, role loadouts, strict provenance and freshness checks |
+| Integrity | Shared locks, local Git checkpoints, content hashes, authority receipts, fail-closed validation |
+| Evolution | Curator, wiki hygiene, retrieval refresh, adversarial verification, guarded reflection |
+| Agents | Vault-local Claude and Codex contracts, lifecycle hooks, evolution skills |
+| Tooling | 150 bundled skills, 29 optional Claude plugin entries, optional Codex and ECC setup |
 
-## 🧠 How it works
+## Privacy boundary
 
-- **Persistent wiki-memory.** A PARA vault (Projects / Areas / Resources / Archives) with an index, an append-only log, and a hot-context cache that reloads on session start.
-- **Isolated zones.** Each zone owns its own index, log, and hot cache. Content in one never links to or lists another.
-- **Self-improvement loop.** `.vault-meta/evolution/` runs a Curator over memory, a zone-aware wiki lint/fold, a retrieval refresh, and a reflection pass over session traces — surfacing suggestions, never silently rewriting.
-- **Claude + Codex parity.** Codex reads the same vault as durable memory. Its hooks live in a standalone `~/.codex/hooks.json` (distinct from Claude's `settings.json` hooks), and the evolution toolkit runs on both with `--platform` flags.
+- Obsidian files remain the source of truth on the user's machine.
+- Generated retrieval indexes and session traces stay local and are ignored by Git.
+- Small index authority receipts are committed locally so retrieval can detect stale or unreviewed state.
+- Personal and client zones are never eligible for work reflection.
+- Authentication files, local MCP configuration, hook trust hashes, and existing user settings are never shipped.
+- Optional third-party plugins and connected services have their own network and privacy policies. Vault OS itself does not upload vault contents.
 
-## 🗂️ Repository layout
+## Repository layout
 
-```
+```text
 vault-os/
-├── site/                 # 1-page landing (GitHub Pages)
-├── INSTALL.md            # instructions Claude follows on "install"
-├── installer/            # quiz + platform install scripts
-└── shell/
-    ├── claude/           # settings template + 35 curated skills
-    ├── codex/            # Codex config + hooks templates
-    └── vault-template/   # CLAUDE/AGENTS templates, PARA scaffold,
-                          # evolution toolkit (Claude + Codex), .obsidian config
+├── INSTALL.md
+├── installer/
+│   ├── render-vault.py
+│   ├── quiz.md
+│   └── steps.md
+├── shell/
+│   ├── claude/             # global settings template and 150 skills
+│   ├── codex/              # public plugin and hook templates
+│   └── vault-template/     # empty vault, memory engine, hooks, and evolution runtime
+├── tests/
+│   └── test_render_vault.py
+└── site/
 ```
 
-## 🔒 Privacy by design
+## Verify the release
 
-Templates carry placeholders, not secrets. The installer **backs up** every file before it merges, and never touches `auth.json`, `settings.local.json`, API keys, or an existing vault without asking. What you clone here is a scaffold — your data stays yours, on your machine.
+```bash
+python3 -m unittest discover -s tests -v
+```
 
-## 📄 License
+The test renders a clean vault, validates the policy chain, initializes local Git, builds and validates all three indexes under locks, commits authority receipts, and performs a live retrieval query.
+
+## License
 
 [MIT](LICENSE) © 2026 Vladyslav Chumak

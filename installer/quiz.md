@@ -1,22 +1,15 @@
 # Install quiz
 
-Ask these via **AskUserQuestion**. Keep it short and friendly; explain jargon in one line.
+Ask these questions before rendering the vault.
 
-## Q1 — Name
-"What should I call you?" — free text. Fills `{{OWNER_NAME}}` in CLAUDE.md / AGENTS.md.
+1. What should the system call you? This becomes the exact L3 approval owner.
+2. What language should Claude prefer?
+3. What should the vault be called, and where should it be created? The target must be new or empty.
+4. What label should the isolated client zone use? Its internal slug stays `client`.
+5. Install the optional Codex integration?
+6. Install ECC into a separate code project? If yes, ask for that project path.
+7. Do you explicitly approve the bundled `L0-L3 Memory Model for the Vault` and `Autonomous Reflection Delegation Policy` as owner-level L3 doctrine for this new vault?
 
-## Q2 — Language
-"What language are you most comfortable working in?" (English, Русский, etc.). Sets `language` in `~/.claude/settings.json` and the wording of zone switch-phrases.
+Explain question 7 before asking: L3 contains stable owner policy. Approval binds the exact rendered doctrine pages and the audited local code by SHA-256. Autonomous reflection is limited to completed work-zone turns, can propose only L0 to L2, cannot approve L3, and cannot access personal or client zones.
 
-## Q3 — Zones
-Explain first: "Zones are **isolated work contexts** — their notes never mix and never cross-link. Everyone gets a **Work** zone. You can add more (e.g. **Personal**, or a **client's name**) to keep things cleanly separated."
-Ask: how many extra zones and what to name them (free-form). Default: just Work.
-
-## Q4 — Codex
-"Install the **Codex** integration? It's a design/ideas engine wired to the same vault. Needs the Codex desktop app + your own OpenAI login." — Yes / No.
-
-## Q5 — ECC
-"Install **ECC**? It's a development framework (27 agents + skills for code projects: planning, TDD, review, security). It installs into a **code project**, not the vault." — Yes / No.
-If Yes: "Path to the code project to install it into?" (if they have none yet, skip and print the install command for later).
-
-After the quiz, proceed through `INSTALL.md` steps 3–11 using these answers. Zone + rules generation detail is in `steps.md`.
+Only pass `--approve-memory-policy` after an explicit yes. If the answer is no, do not create a partial installation.

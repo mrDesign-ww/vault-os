@@ -1,5 +1,4 @@
 {
-  "_comment": "Vault-scoped Claude Code settings. The SessionStart hook runs the evolution health-nudge (suggests tidy-up when the vault is due). Relative path = must be launched with cwd = vault root (the launch shortcut does this).",
   "hooks": {
     "SessionStart": [
       {
@@ -7,7 +6,29 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f .vault-meta/evolution/health-check.py ] && python3 .vault-meta/evolution/health-check.py 2>/dev/null || true"
+            "command": "[ -f .vault-meta/evolution/health-check.py ] && /usr/bin/python3 .vault-meta/evolution/health-check.py 2>/dev/null || printf '🧹 VAULT EVOLUTION: health-check launch unavailable\\n'"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" ]; then /usr/bin/python3 \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" prompt-start; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" ]; then /usr/bin/python3 \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" stop; fi",
+            "timeout": 10
           }
         ]
       }

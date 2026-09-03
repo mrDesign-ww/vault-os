@@ -38,7 +38,13 @@
     "obsidian@obsidian-skills": true,
     "frontend-slides@frontend-slides": true,
     "document-skills@anthropic-agent-skills": true,
-    "claude-video-vision@claude-video-vision": true
+    "claude-video-vision@claude-video-vision": true,
+    "caveman@caveman": true,
+    "ponytail@ponytail": true,
+    "i-have-adhd@i-have-adhd": true,
+    "hyperframes@hyperframes": true,
+    "last30days@last30days-skill": true,
+    "claude-hud@claude-hud": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -75,6 +81,42 @@
       "source": {
         "source": "git",
         "url": "https://github.com/jordanrendric/claude-video-vision.git"
+      }
+    },
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "i-have-adhd": {
+      "source": {
+        "source": "github",
+        "repo": "ayghri/i-have-adhd"
+      }
+    },
+    "hyperframes": {
+      "source": {
+        "source": "github",
+        "repo": "heygen-com/hyperframes"
+      }
+    },
+    "last30days-skill": {
+      "source": {
+        "source": "github",
+        "repo": "mvanhorn/last30days-skill"
+      }
+    },
+    "claude-hud": {
+      "source": {
+        "source": "github",
+        "repo": "jarrodwatts/claude-hud"
       }
     }
   },
