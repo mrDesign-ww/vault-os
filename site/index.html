@@ -14,17 +14,17 @@
   ============================================================
 -->
 
-<title>Vault OS: Local Memory for Claude Code, Codex, and Obsidian</title>
-<meta name="description" content="A local Obsidian memory system for Claude Code and Codex: PARA, L0-L3 trust, isolated zones, 150 skills, and guarded reflection.">
+<title>Vault OS: Trust-aware memory for Claude Code, Codex, and Obsidian</title>
+<meta name="description" content="A local-first Obsidian memory OS for Claude Code and Codex: trust-aware L0-L3 retrieval, isolated zones, 150 skills, and guarded work-only evolution.">
 
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mrdesign-ww.github.io/vault-os/">
-<meta property="og:title" content="Vault OS: Local Memory for Claude Code, Codex, and Obsidian">
-<meta property="og:description" content="A local Obsidian memory system for Claude Code and Codex: PARA, L0-L3 trust, isolated zones, 150 skills, and guarded reflection.">
+<meta property="og:title" content="Vault OS: Trust-aware memory for Claude Code, Codex, and Obsidian">
+<meta property="og:description" content="A local-first Obsidian memory OS for Claude Code and Codex: trust-aware L0-L3 retrieval, isolated zones, 150 skills, and guarded work-only evolution.">
 <meta property="og:image" content="https://mrdesign-ww.github.io/vault-os/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Vault OS: Local Memory for Claude Code, Codex, and Obsidian">
-<meta name="twitter:description" content="A local Obsidian memory system for Claude Code and Codex: PARA, L0-L3 trust, isolated zones, 150 skills, and guarded reflection.">
+<meta name="twitter:title" content="Vault OS: Trust-aware memory for Claude Code, Codex, and Obsidian">
+<meta name="twitter:description" content="A local-first Obsidian memory OS for Claude Code and Codex: trust-aware L0-L3 retrieval, isolated zones, 150 skills, and guarded work-only evolution.">
 <meta name="twitter:image" content="https://mrdesign-ww.github.io/vault-os/assets/og.png">
 
 <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
@@ -463,7 +463,7 @@
     content: ""; position: absolute; top: 19px; left: 9%; right: 9%; height: 2px; border-radius: 2px;
     background: linear-gradient(90deg, transparent, var(--line-2) 12%, var(--line-2) 88%, transparent);
   }
-  .stations { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 2vw, 22px); }
+  .stations { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 3vw, 32px); }
   .station { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 11px; }
   .station .snode {
     position: relative; width: 40px; height: 40px; border-radius: 50%; flex: none; z-index: 1;
@@ -489,11 +489,9 @@
     html.js .timeline.reveal.in .station:nth-child(1) .snode { transition-delay: .12s; }
     html.js .timeline.reveal.in .station:nth-child(2) .snode { transition-delay: .26s; }
     html.js .timeline.reveal.in .station:nth-child(3) .snode { transition-delay: .40s; }
-    html.js .timeline.reveal.in .station:nth-child(4) .snode { transition-delay: .54s; }
     .station .pring { animation: pring 3.6s var(--ease-out) infinite; }
     .station:nth-child(2) .pring { animation-delay: .9s; }
     .station:nth-child(3) .pring { animation-delay: 1.8s; }
-    .station:nth-child(4) .pring { animation-delay: 2.7s; }
   }
   @keyframes pring { 0% { opacity: .45; transform: scale(1); } 70% { opacity: 0; } 100% { opacity: 0; transform: scale(1.85); } }
   @media (max-width: 720px) {
@@ -687,7 +685,7 @@
       <div class="hero-copy">
         <p class="eyebrow">Claude&nbsp;Code&nbsp;&times;&nbsp;Codex&nbsp;&times;&nbsp;Obsidian</p>
         <h1>Give AI a <span class="em">memory</span> that <span class="serif">compounds.</span></h1>
-        <p class="lead">A local operating system with a persistent wiki, trust-aware L0-L3 memory, 150 skills, isolated zones, and a guarded loop that keeps improving itself.</p>
+        <p class="lead">Plain-text knowledge, trust-aware L0-L3 retrieval, isolated work, personal, and client zones, plus guarded work-only evolution.</p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="#install">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
@@ -701,7 +699,7 @@
       <div class="hero-visual">
         <div class="graph-card reveal fade-only">
           <span class="cap">vault · graph</span>
-          <svg class="graph-svg" viewBox="0 0 520 440" role="img" aria-label="A knowledge graph: a central vault core linked to index, log and hot-cache notes and to three isolated zone clusters for work, personal and clients.">
+          <svg class="graph-svg" viewBox="0 0 520 440" role="img" aria-label="A knowledge graph: a central vault core linked to index, log and hot-cache notes and to three isolated zone clusters for work, personal and client.">
             <!-- edges (drawn first, behind nodes) -->
             <g fill="none">
               <line class="edge warm" x1="260" y1="220" x2="150" y2="120" style="--d:.15s"/>
@@ -750,7 +748,7 @@
             <text class="glab node" x="95"  y="205" text-anchor="middle" style="--d:.6s">work</text>
             <text class="glab node" x="435" y="205" text-anchor="middle" style="--d:.6s">personal</text>
             <text class="glab node" x="160" y="356" text-anchor="middle" style="--d:.66s">hot</text>
-            <text class="glab node" x="372" y="356" text-anchor="middle" style="--d:.66s">clients</text>
+            <text class="glab node" x="372" y="356" text-anchor="middle" style="--d:.66s">client</text>
           </svg>
         </div>
 
@@ -773,7 +771,7 @@
   <section class="thesis">
     <div class="wrap thesis-grid">
       <p>Every session starts smarter than the last.</p>
-      <p class="body">Out of the box, Claude wakes up blank each time you open it. <span data-product-name>Vault&nbsp;OS</span> gives it a place to keep what it learns: a plain-text wiki that remembers your projects, decisions, and sources. Drop something in, ask a question later, and <em>the knowledge is still there</em> &mdash; sharper for having been used.</p>
+      <p class="body">AI tools do not reliably carry project context from one session to the next. <span data-product-name>Vault&nbsp;OS</span> gives Claude Code and Codex a shared, plain-text knowledge base for projects, decisions, and sources. Return later and <em>the evidence is still there</em>, with provenance and trust intact.</p>
     </div>
   </section>
 
@@ -782,8 +780,8 @@
     <div class="wrap">
       <div class="section-head reveal">
         <p class="eyebrow">What you get</p>
-        <h2>Everything Claude has been missing.</h2>
-        <p>Not a prompt pack. A working system that installs into Claude Code and Obsidian and runs alongside every session.</p>
+        <h2>Memory with an explicit trust model.</h2>
+        <p>Not a prompt pack. An empty Obsidian template plus a local runtime for Claude Code, with optional Codex integration.</p>
       </div>
 
       <div class="cards" data-stagger>
@@ -807,7 +805,7 @@
           </svg>
           <h3>Isolated zones</h3>
           <p>Work, personal, and client zones never mix. Each keeps its own index, log, and memory. Switch the whole session with one sentence.</p>
-          <span class="tag">work &middot; personal &middot; clients</span>
+          <span class="tag">work &middot; personal &middot; client</span>
         </article>
 
         <article class="card reveal">
@@ -818,9 +816,9 @@
             <rect x="14" y="22" width="12" height="12" rx="3"/>
             <path d="M18 12h4M20 18v4" opacity=".7"/>
           </svg>
-          <h3>Curated plugins, skills &amp; agents</h3>
+          <h3>Curated skills &amp; integrations</h3>
           <p>150 bundled skills and 29 optional Claude plugin entries cover design, development, research, review, marketing, and media work.</p>
-          <span class="tag">plugins &middot; skills &middot; agents</span>
+          <span class="tag">plugins &middot; skills &middot; tools</span>
         </article>
 
         <article class="card reveal">
@@ -859,7 +857,7 @@
 
       <div class="addon reveal">
         <span class="k">Add-ons</span>
-        <p>Bring your own engines: <b>Codex</b> for design and ideation, and <b>ECC</b> as a heavier development framework. Optional, and wired in the same way.</p>
+        <p>Add <b>Codex</b> as a second vault-aware work partner, or <b>ECC</b> as a project-scoped development framework. Both integrations are optional.</p>
       </div>
     </div>
   </section>
@@ -874,7 +872,7 @@
       </div>
 
       <div class="diagram-shell reveal">
-        <svg class="diagram-svg" viewBox="0 0 720 320" role="img" aria-label="Architecture: the Obsidian vault (the brain) and Claude Code (the hands) exchange notes and actions, wrapped by an evolution loop that maintains the system.">
+        <svg class="diagram-svg" viewBox="0 0 720 320" role="img" aria-label="Architecture: the Obsidian vault stores knowledge while Claude Code and Codex perform work, wrapped by a guarded evolution loop.">
           <defs>
             <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0 0 10 5 0 10z" fill="var(--accent)"/>
@@ -897,10 +895,10 @@
           <!-- HANDS (right) -->
           <g>
             <rect x="452" y="70" width="228" height="150" rx="18" fill="var(--bg-tint)" stroke="var(--line-2)"/>
-            <text class="dlab" x="476" y="102" font-size="12" letter-spacing=".14em" fill="var(--text-mute)">CLAUDE CODE</text>
+            <text class="dlab" x="476" y="102" font-size="12" letter-spacing=".14em" fill="var(--text-mute)">CLAUDE CODE + CODEX</text>
             <text class="dlab" x="476" y="132" font-size="19" font-weight="600" fill="var(--text)">The hands</text>
-            <text class="dlab" x="476" y="162" font-size="12.5" fill="var(--text-dim)">skills &middot; agents</text>
-            <text class="dlab" x="476" y="182" font-size="12.5" fill="var(--text-dim)">hooks &middot; commands</text>
+            <text class="dlab" x="476" y="162" font-size="12.5" fill="var(--text-dim)">skills &middot; tools</text>
+            <text class="dlab" x="476" y="182" font-size="12.5" fill="var(--text-dim)">hooks &middot; contracts</text>
             <circle cx="647" cy="99" r="4" fill="var(--accent)"/>
           </g>
 
@@ -938,7 +936,7 @@
       <div class="section-head reveal">
         <p class="eyebrow">Automation · hooks</p>
         <h2>It works while you work.</h2>
-        <p>Four hooks fire on their own across a session, so the vault stays saved, loaded, and current without a single manual step.</p>
+        <p>Three lifecycle events maintain a recoverable session trail. They check health, register each turn, and close it cleanly for later reflection.</p>
       </div>
 
       <div class="timeline reveal">
@@ -951,7 +949,7 @@
             <div class="txt">
               <span class="when">session start</span>
               <span class="hk">SessionStart</span>
-              <span class="eff">Loads your recent context (hot cache) — Claude resumes where you left off.</span>
+              <span class="eff">Checks system health and reports a repair or evolution nudge when attention is due.</span>
             </div>
           </div>
 
@@ -961,9 +959,9 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 3v5.2M12 15.8V21"/></svg>
             </div>
             <div class="txt">
-              <span class="when">on write / edit</span>
-              <span class="hk">PostToolUse</span>
-              <span class="eff">Auto-commits every vault change to git — nothing is ever lost.</span>
+              <span class="when">before each turn</span>
+              <span class="hk">UserPromptSubmit</span>
+              <span class="eff">Registers the turn so its zone, lifecycle, and later disposition remain traceable.</span>
             </div>
           </div>
 
@@ -973,29 +971,17 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>
             </div>
             <div class="txt">
-              <span class="when">session end</span>
+              <span class="when">after each response</span>
               <span class="hk">Stop</span>
-              <span class="eff">Nudges you to refresh the hot cache and capture new knowledge.</span>
-            </div>
-          </div>
-
-          <div class="station cool">
-            <div class="snode">
-              <div class="pring"></div>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2.5 6 4-14 2.5 8h5"/></svg>
-            </div>
-            <div class="txt">
-              <span class="when">when due</span>
-              <span class="hk">Health nudge</span>
-              <span class="eff">Suggests running evolution when the vault is due for a tidy-up.</span>
+              <span class="eff">Finalizes a recoverable trace that guarded, work-only reflection can inspect later.</span>
             </div>
           </div>
         </div>
       </div>
 
       <div class="hooks-foot reveal">
-        <span class="k">quietly</span>
-        <p>The system works in the background so you don't have to. <b>No commands to remember, nothing to save by hand.</b></p>
+        <span class="k">bounded</span>
+        <p>Hooks track lifecycle state. <b>Durable vault edits still use explicit locks, validation, and local Git checkpoints.</b></p>
       </div>
     </div>
   </section>
@@ -1107,8 +1093,8 @@
     <div class="wrap">
       <div class="section-head reveal">
         <p class="eyebrow">Install</p>
-        <h2>Two steps. No config files.</h2>
-        <p>You do not clone, copy folders, or edit settings. You open Claude Code and ask.</p>
+        <h2>Ask once. Review every trust choice.</h2>
+        <p>Open Claude Code and ask it to install the repository. The guided flow creates a new vault and preserves your existing settings.</p>
       </div>
 
       <div class="install-grid">
@@ -1131,7 +1117,7 @@
             <span class="n">&check;</span>
             <div>
               <h3>That&rsquo;s it</h3>
-              <p>The installer validates all three zones, commits local authority receipts, and proves retrieval before reporting success.</p>
+              <p>The installation workflow validates all three zones, commits local authority receipts, and proves retrieval before reporting success.</p>
             </div>
           </div>
         </div>
@@ -1151,7 +1137,7 @@
 <div class="ln"><span class="q">?</span> <span class="cmd">Language for the vault?</span> <span class="arg">English</span></div>
 <div class="ln"><span class="q">?</span> <span class="cmd">Approve the bundled L3 doctrine?</span> <span class="arg">yes</span></div>
 <div class="ln">&nbsp;</div>
-<div class="ln"><span class="ok">&check;</span> <span class="cm">vault template &middot; plugins &middot; skills &middot; agents</span></div>
+<div class="ln"><span class="ok">&check;</span> <span class="cm">empty vault &middot; plugins &middot; skills &middot; contracts</span></div>
 <div class="ln"><span class="ok">&check;</span> <span class="cm">three indexes validated &middot; trust chain bound</span></div>
 <div class="ln"><span class="ok">done.</span> <span class="cmd">your vault is live<span class="cur" aria-hidden="true"></span></span></div>
             </div>
@@ -1179,13 +1165,14 @@
 <div class="row"><span class="dl">---</span></div>
 <div class="row"><span class="key">plugins</span><span class="dl">:</span>   <span class="val big">29</span>          <span class="cmt"># optional Claude plugin entries</span></div>
 <div class="row"><span class="key">skills</span><span class="dl">:</span>    <span class="val big">150</span>         <span class="cmt"># design, dev, review, research</span></div>
-<div class="row"><span class="key">agents</span><span class="dl">:</span>    <span class="val">specialist team</span>  <span class="cmt"># loaded on demand</span></div>
-<div class="row"><span class="key">zones</span><span class="dl">:</span>     <span class="val">work</span> <span class="sep">&middot;</span> <span class="val">personal</span> <span class="sep">&middot;</span> <span class="val">clients</span>  <span class="cmt"># fully isolated</span></div>
+<div class="row"><span class="key">contracts</span><span class="dl">:</span> <span class="val">Claude Code</span> <span class="sep">&middot;</span> <span class="val">Codex</span>  <span class="cmt"># vault-native behavior</span></div>
+<div class="row"><span class="key">zones</span><span class="dl">:</span>     <span class="val">work</span> <span class="sep">&middot;</span> <span class="val">personal</span> <span class="sep">&middot;</span> <span class="val">client</span>  <span class="cmt"># fully isolated</span></div>
 <div class="row"><span class="key">memory</span><span class="dl">:</span>    <span class="val">PARA</span> <span class="sep">&middot;</span> <span class="val">L0-L3</span> <span class="sep">&middot;</span> <span class="val">role loadouts</span> <span class="sep">&middot;</span> <span class="val">Git authority</span></div>
 <div class="row"><span class="key">evolution</span><span class="dl">:</span> <span class="val">guarded reflection</span> <span class="cmt"># work-only, L3 excluded</span></div>
 <div class="row"><span class="key">hooks</span><span class="dl">:</span>     <span class="val">session-aware</span> <span class="sep">&middot;</span> <span class="val">zone-aware</span>  <span class="cmt"># crash-safe lifecycle</span></div>
 <div class="row"><span class="key">add_ons</span><span class="dl">:</span>    <span class="val">Codex</span> <span class="sep">&middot;</span> <span class="val">ECC</span>      <span class="cmt"># optional engines</span></div>
-<div class="row"><span class="key">license</span><span class="dl">:</span>   <span class="val">local-first</span>     <span class="cmt"># your files stay yours</span></div>
+<div class="row"><span class="key">storage</span><span class="dl">:</span>   <span class="val">plain text</span> <span class="sep">&middot;</span> <span class="val">local Git</span>  <span class="cmt"># local-first</span></div>
+<div class="row"><span class="key">license</span><span class="dl">:</span>   <span class="val">MIT</span></div>
 <div class="row"><span class="dl">---</span></div>
         </div>
       </div>
@@ -1220,7 +1207,7 @@
       </nav>
     </div>
     <div class="foot-base">
-      <span>Local git only. Your notes never leave your machine.</span>
+      <span>Local vault and Git. Connected plugins follow their own privacy policies.</span>
       <span data-product-name>Vault OS</span>
     </div>
   </div>
@@ -1232,7 +1219,7 @@
   const REPO_URL = "github.com/mrDesign-ww/vault-os";  // shown in hero terminal + links
 
   document.querySelectorAll('[data-product-name]').forEach(function (el) { el.textContent = PRODUCT_NAME; });
-  document.title = PRODUCT_NAME + ": Local Memory for Claude Code, Codex, and Obsidian";
+  document.title = PRODUCT_NAME + ": Trust-aware memory for Claude Code, Codex, and Obsidian";
   const repoLine = document.getElementById('repo-line');
   if (repoLine) repoLine.textContent = REPO_URL;
   ['repo-foot'].forEach(function (id) {
