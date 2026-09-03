@@ -1,76 +1,98 @@
-# Installing Vault OS — instructions for Claude Code
+# Installing Vault OS
 
-You (Claude Code) are installing the **Vault OS** starter for a new user on THIS machine. The user has cloned this repo and said "install". Follow these steps in order.
+These are the instructions for Claude Code when a user asks to install Vault OS from this repository.
 
-## Golden rules (safety)
+## Safety rules
 
-- **Back up before you overwrite.** Copy any existing `~/.claude/settings.json` and `~/.codex/config.toml` to `*.backup-<timestamp>` before merging.
-- **Never overwrite an existing vault** or existing personal data without asking.
-- **Idempotent:** if something is already installed, skip or update — don't duplicate.
-- Detect the OS and use `installer/install-mac.sh` (macOS) or `installer/install-windows.ps1` (Windows) for platform steps.
+- Create the vault only in a new or empty directory.
+- Never copy a real vault into this repository.
+- Back up existing global Claude and Codex configuration before merging anything.
+- Never copy authentication files, API keys, local MCP configuration, trust hashes, or machine-specific paths.
+- Initialize Git locally inside the new vault. Do not add a remote.
+- The hardened memory and reflection runtime currently requires macOS or Linux. On Windows, use WSL for the full system.
 
-## 1. Prerequisites
+## 1. Check prerequisites
 
-Check `git`, `node`, `python3`, and the `claude` CLI are present. Install any missing:
-- macOS: Homebrew (`brew install …`).
-- Windows: winget (`winget install …`).
-The platform script handles this — run it first.
+The full system needs Git, Python 3, Node.js, Claude Code, and Obsidian. On macOS, the helper can check or install the command-line prerequisites:
 
-## 2. Quiz — ask the user
-
-Run the questions in `installer/quiz.md` via **AskUserQuestion**: their **name**, preferred **language**, **zones** (free-form, with the isolation explanation), whether to install **Codex**, and whether to install **ECC** (+ the code-project path if yes). Hold the answers for the steps below.
-
-## 3. Obsidian app
-
-Install Obsidian if absent: macOS `brew install --cask obsidian`; Windows `winget install Obsidian.Obsidian`.
-
-## 4. Vault
-
-1. Ask for the vault location (default: `~/Documents/<name-or-"Vault">`). If a vault already exists there, ask before proceeding.
-2. Copy `shell/vault-template/*` (including dotfiles: `.obsidian/`, `.vault-meta/`, `.claude/`, `.agents/`, `.gitignore`) into the vault path.
-3. Install the `claude-obsidian` plugin via marketplace **`AgriciDaniel/claude-obsidian`** → plugin `claude-obsidian@agricidaniel-claude-obsidian` (this is already enabled in the settings template).
-4. Run the plugin's own scaffolders on the vault: `bash <plugin>/bin/setup-vault.sh <vault>` then `bash <plugin>/bin/setup-mode.sh --mode para` (with cwd = vault). These create `.obsidian` config, PARA folders, and `wiki/{index,hot,log,overview}.md`.
-5. Generate `.vault-meta/mode.json` from `mode.template.json` + the quiz zones — see `installer/steps.md` §Zones. Create each extra zone's folders + starter `_index.md`/`log.md`/`hot.md`.
-6. `git init` the vault (local only, no remote).
-
-## 5. Claude global settings
-
-Back up `~/.claude/settings.json`, then merge `shell/claude/settings.template.json` into it: substitute `{{LANGUAGE}}` with the quiz language, keep the user's existing unrelated keys, and DO NOT enable `bypassPermissions`.
-
-## 6. Custom skills
-
-Copy every folder in `shell/claude/skills/*` into `~/.claude/skills/` (skip any that already exist unless updating).
-
-## 7. Rules (CLAUDE.md + AGENTS.md)
-
-Generate the vault's `CLAUDE.md` from `shell/vault-template/CLAUDE.template.md`, filling `{{VAULT_TITLE}}`, `{{OWNER_NAME}}`, `{{DATE}}`, and the `{{ZONE_*}}` blocks from the quiz (see `installer/steps.md` §Rules). Then generate `AGENTS.md` as the **Codex mirror**: same content with "Claude" → "Codex" (leave `claude-obsidian` plugin names intact).
-
-## 8. Codex (only if chosen in the quiz)
-
-1. Install the **Codex desktop app** (macOS: OpenAI download or `brew install --cask codex` if available; Windows: the app installer, else `npm install -g @openai/codex` with a note that the CLI's integration differs).
-2. The user signs in with their own OpenAI account (writes `~/.codex/auth.json` — never copy this).
-3. Back up `~/.codex/config.toml`, then merge the blocks from `shell/codex/config.template.toml` (the git-source marketplaces + plugin enables). Keep the user's existing keys; do NOT copy any `[hooks.state]` block — it is machine-specific.
-4. **Codex hooks — a different mechanism from Claude.** Claude keeps hooks inside `settings.json`; Codex reads them from a standalone `~/.codex/hooks.json`. Back up any existing `~/.codex/hooks.json`, then install `shell/codex/hooks.template.json` there, substituting `{{VAULT_PATH}}` with the absolute vault path. Never write `[hooks.state]` yourself.
-5. Tell the user Codex will prompt to trust the vault, the plugin hooks, and `~/.codex/hooks.json` on first open — that's expected. Codex records each hook's trust hash under `[hooks.state]` in `config.toml` at that moment (machine-specific, regenerated locally, never shipped).
-
-## 9. ECC (only if chosen in the quiz)
-
-Install the SAME stack the author uses, into the user's code-project path:
+```bash
+bash installer/install-mac.sh ensure_prereqs
+bash installer/install-mac.sh ensure_obsidian
 ```
-cd <code-project> && git clone https://github.com/affaan-m/ECC .ecc-src && cd .ecc-src
-npm install --omit=dev --ignore-scripts
-node scripts/install-apply.js --profile core \
-  --with lang:typescript --with framework:react --with framework:nextjs \
-  --with capability:database --with capability:security --with capability:research \
-  --target claude-project
-cd .. && rm -rf .ecc-src
+
+## 2. Ask the install quiz
+
+Use `installer/quiz.md`. Collect the owner name, preferred language, vault title and path, client-zone label, optional Codex integration, optional ECC integration, and explicit approval for the two bundled L3 doctrine pages.
+
+Do not infer L3 approval. If the user declines it, stop before rendering and explain that this release packages the current hardened system as one trust-bound installation.
+
+## 3. Render a clean vault
+
+Run the deterministic renderer. It refuses a non-empty target and binds all owner, path, policy, code, evaluation, and doctrine hashes locally.
+
+```bash
+python3 installer/render-vault.py \
+  --target "/absolute/path/to/new-vault" \
+  --owner "Owner Name" \
+  --title "Vault Title" \
+  --language "English" \
+  --client-label "Client" \
+  --approve-memory-policy
 ```
-The two env paths it writes self-heal to the user's root. If the user gave no code-project path, print this command for them to run later (ECC is project-scoped — never global).
 
-## 10. Launch shortcut
+The result contains three isolated zones: work, personal, and client. The client label is configurable, but its stable internal slug remains `client` so the audited runtime does not need generated code.
 
-Create a shortcut that opens Claude Code in the vault: macOS a `~/Desktop/<name>.command` running `cd "<vault>" && claude`; Windows a `.lnk`. The platform script has a helper.
+## 4. Create the local trust baseline
 
-## 11. Done
+Run these commands from the new vault. Use the user's normal Git identity if already configured.
 
-Print a short "You're ready" message: the vault path, how to open it in Obsidian, and that they can just start talking to Claude in the vault (try `/wiki` or "ingest <file>"). Mention "run evolution" for self-maintenance.
+```bash
+git init
+git add .
+git commit -m "Initialize Vault OS"
+
+for zone in work personal client; do
+  token=$(bash scripts/wiki-lock.sh acquire ".vault-meta/write/$zone" --ttl 3600) || exit 1
+  python3 scripts/memory-model.py build --zone "$zone" --lock-token "$token" &&
+  python3 scripts/memory-model.py validate --zone "$zone" --lock-token "$token"
+  status=$?
+  bash scripts/wiki-lock.sh release ".vault-meta/write/$zone" "$token"
+  [ "$status" -eq 0 ] || exit "$status"
+done
+
+git add .vault-meta/memory-index/*.authority.json
+git commit -m "Bind memory index authority"
+python3 scripts/memory-model.py retrieve "memory source of truth" --zone work --loadout general
+```
+
+Inspect the final result. It must include both bundled L3 pages with `memory_trust: approved` and a snippet stating that Obsidian is the source of truth.
+
+## 5. Merge Claude settings and install skills
+
+Back up `~/.claude/settings.json`, then merge `shell/claude/settings.template.json` into it. Replace `{{LANGUAGE}}`, preserve unrelated user keys, and never enable bypass permissions.
+
+Copy the folders under `shell/claude/skills/` into `~/.claude/skills/`. Existing user-modified skills require confirmation before replacement.
+
+The new vault already contains its local Claude lifecycle hooks in `.claude/settings.json`. Do not replace that file with the global settings template.
+
+## 6. Optional Codex integration
+
+If selected in the quiz:
+
+1. Install the Codex desktop app and let the user sign in with their own OpenAI account.
+2. Back up `~/.codex/config.toml`, then merge only the public marketplace and plugin blocks from `shell/codex/config.template.toml`.
+3. Back up `~/.codex/hooks.json`, then render `shell/codex/hooks.template.json` into it with the absolute vault path substituted for `{{VAULT_PATH}}`.
+4. Preserve the user's model, account, MCP servers, desktop settings, and existing hooks.
+5. Never copy `[hooks.state]`. Codex creates its machine-specific trust hashes after the user approves the hooks.
+
+## 7. Optional ECC integration
+
+ECC is project-scoped and does not belong inside the vault. If selected, follow the current project install command in `installer/steps.md` using the user's chosen code-project path.
+
+## 8. Open the vault
+
+Open the new directory in Obsidian. The bundled `.obsidian` configuration lists the recommended community plugins, but Obsidian may require the user to install or approve them in its Community Plugins screen.
+
+Optionally create a launch shortcut with `installer/install-mac.sh make_shortcut`.
+
+Report the vault path, the two local Git commits, the retrieval acceptance result, and any optional integrations that were skipped.
