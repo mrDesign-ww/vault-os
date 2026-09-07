@@ -2299,6 +2299,36 @@ def self_test():
     print("claude-trace-hook self-test: PASS")
 
 
+DEGRADED_LOG = HERE / "lifecycle-degraded.log"
+
+
+def report_degraded(command, message):
+    """Record a lifecycle failure without blocking the owner's turn.
+
+    A non-zero UserPromptSubmit exit discards the prompt outright, which locks the
+    owner out of the very session that would repair the fault. Nothing false is
+    written either way, so log the failure, hand it to Claude as context and let the
+    turn through. SessionStart health-check reports the same fault on every launch.
+    """
+    try:
+        with DEGRADED_LOG.open("a", encoding="utf-8") as handle:
+            handle.write("%s\t%s\t%s\n" % (
+                datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                command, message,
+            ))
+    except OSError:
+        pass
+    print(message, file=sys.stderr)
+    if command == "prompt-start":
+        print(
+            "\u26a0\ufe0f Claude memory lifecycle is degraded and this turn is not "
+            "being recorded: %s\nRepair with `/usr/bin/python3 "
+            ".vault-meta/evolution/reseal-policy.py --check` then `--apply`, and "
+            "rebuild the zone index." % message,
+        )
+    return 0
+
+
 def hook_main(command):
     token = None
     route = None
@@ -2313,11 +2343,9 @@ def hook_main(command):
         policy, policy_sha = POLICY.load_policy()
         token = acquire_lock()
         if token is None:
-            print(
-                "Claude memory lifecycle lock is unavailable; retry this turn.",
-                file=sys.stderr,
+            return report_degraded(
+                command, "Claude memory lifecycle lock is unavailable.",
             )
-            return 2
         hook_sha = code_sha256()
         open_base = POLICY.ensure_private_directory(
             VAULT / policy["roots"]["open_work"],
@@ -2346,11 +2374,10 @@ def hook_main(command):
                 completion_root,
             )
     except Exception as error:
-        print(
+        return report_degraded(
+            command,
             "Claude memory lifecycle was not durably recorded: %s" % str(error)[:120],
-            file=sys.stderr,
         )
-        return 2
     finally:
         release_lock(token)
     return 0

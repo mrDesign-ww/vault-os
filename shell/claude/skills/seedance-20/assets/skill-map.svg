@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title>Seedance 2.0 Skill OS operating diagram</title>
+  <desc>Specification diagram: seven gates feed the seedance-20 root skill, which routes to the core pipeline, governance, and multilingual vocabulary clusters, backed by the reference library and validator suite.</desc>
+  <defs>
+    <style>
+      .h1{font:400 15px ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;fill:#EDE6D6;letter-spacing:6px}
+      .root{font:italic 400 46px Didot,'Bodoni MT','Hoefler Text',Baskerville,'Palatino Linotype',Georgia,'Times New Roman',serif;fill:#EDE6D6}
+      .grp{font:400 13px ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;fill:#E2A75E;letter-spacing:3px}
+      .item{font:400 12.5px ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;fill:#9A917D;letter-spacing:1px}
+      .item-b{font:400 12.5px ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;fill:#EDE6D6;letter-spacing:1px}
+      .tiny{font:400 11px ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;fill:#6E6755;letter-spacing:2px}
+      .box{fill:none;stroke:#2E2A22;stroke-width:1}
+      .boxa{fill:none;stroke:#E2A75E;stroke-width:1.5}
+      .hair{stroke:#2E2A22;stroke-width:1}
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" fill="#100E0A"/>
+
+  <text x="72" y="52" class="h1">SEEDANCE 2.0 SKILL OS — OPERATING DIAGRAM</text>
+  <line x1="72" y1="70" x2="1128" y2="70" class="hair"/>
+
+  <!-- GATES column -->
+  <text x="72" y="116" class="grp">GATES</text>
+  <g>
+    <rect x="72" y="132" width="220" height="34" class="box"/><text x="86" y="154" class="item-b">SOURCE</text><text x="196" y="154" class="item">api-status</text>
+    <rect x="72" y="174" width="220" height="34" class="box"/><text x="86" y="196" class="item-b">CAPABILITY</text><text x="196" y="196" class="item">map</text>
+    <rect x="72" y="216" width="220" height="34" class="box"/><text x="86" y="238" class="item-b">ALLOCATION</text><text x="196" y="238" class="item">budget</text>
+    <rect x="72" y="258" width="220" height="34" class="box"/><text x="86" y="280" class="item-b">MODE</text><text x="196" y="280" class="item">t2v…flf2v</text>
+    <rect x="72" y="300" width="220" height="34" class="box"/><text x="86" y="322" class="item-b">REFERENCES</text><text x="196" y="322" class="item">roles</text>
+    <rect x="72" y="342" width="220" height="34" class="box"/><text x="86" y="364" class="item-b">MULTILINGUAL</text><text x="196" y="364" class="item">6 langs</text>
+    <rect x="72" y="384" width="220" height="34" class="box"/><text x="86" y="406" class="item-b">SAFETY</text><text x="196" y="406" class="item">ip · filter</text>
+  </g>
+
+  <!-- connectors gates -> root -->
+  <line x1="292" y1="270" x2="430" y2="270" class="hair"/>
+
+  <!-- ROOT -->
+  <rect x="430" y="216" width="340" height="108" class="boxa"/>
+  <text x="600" y="268" text-anchor="middle" class="root">seedance-20</text>
+  <text x="600" y="300" text-anchor="middle" class="item">OPERATING LOOP · LOAD MAP</text>
+
+  <!-- connectors root -> clusters -->
+  <line x1="770" y1="270" x2="880" y2="270" class="hair"/>
+  <line x1="600" y1="324" x2="600" y2="500" class="hair"/>
+
+  <!-- CLUSTERS column -->
+  <text x="880" y="116" class="grp">SKILL CLUSTERS</text>
+  <g>
+    <rect x="880" y="132" width="248" height="150" class="box"/>
+    <text x="896" y="158" class="item-b">CORE PIPELINE</text>
+    <text x="896" y="182" class="item">interview · prompt · camera</text>
+    <text x="896" y="202" class="item">motion · lighting · characters</text>
+    <text x="896" y="222" class="item">style · vfx · audio · recipes</text>
+    <text x="896" y="242" class="item">pipeline · troubleshoot</text>
+    <text x="896" y="268" class="tiny">VAGUE IDEA → DELIVERED SHOT</text>
+
+    <rect x="880" y="300" width="248" height="96" class="box"/>
+    <text x="896" y="326" class="item-b">GOVERNANCE &amp; QUALITY</text>
+    <text x="896" y="350" class="item">copyright · antislop · filter</text>
+    <text x="896" y="376" class="tiny">FALSE-POSITIVE REPAIR ONLY</text>
+
+    <rect x="880" y="414" width="248" height="118" class="box"/>
+    <text x="896" y="440" class="item-b">MULTILINGUAL VOCABULARY</text>
+    <text x="896" y="464" class="item">en · zh · ja · ko · es · ru</text>
+    <text x="896" y="484" class="item">examples-zh</text>
+    <text x="896" y="510" class="tiny">SLOP TRAPS PER LANGUAGE</text>
+  </g>
+
+  <!-- REFERENCE LIBRARY band -->
+  <rect x="72" y="500" width="1056" height="92" class="box"/>
+  <text x="88" y="528" class="grp">REFERENCE LIBRARY</text>
+  <text x="88" y="554" class="item">capability map · allocation model · multishot grammar · 2d/anime grammar · api status · surface matrix</text>
+  <text x="88" y="576" class="item">pro filmmaking · shot lists · color/aces · audio post · subtitles · delivery-qc · vocab × 6 · anti-slop lexicon</text>
+
+  <!-- VALIDATION band -->
+  <rect x="72" y="616" width="1056" height="72" class="box"/>
+  <text x="88" y="644" class="grp">VALIDATION</text>
+  <text x="88" y="670" class="item">behavioral evals · skills · content · eval schema · design · source registry · vocab schema — strict, on every push</text>
+
+  <line x1="72" y1="716" x2="1128" y2="716" class="hair"/>
+  <text x="72" y="740" class="tiny">EVERY PLATFORM CLAIM SOURCE-DATED · FIELD TRICKS NEVER PROMISED AS PLATFORM GUARANTEES</text>
+</svg>

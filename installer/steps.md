@@ -35,6 +35,20 @@ rm -rf .ecc-src
 
 Confirm the exact target before removing `.ecc-src`. ECC is never installed globally and never copied into the vault.
 
+## Repairing the trust chain
+
+The reflection policy, its loader, the doctrine page, the approvals manifest, and
+the memory resolver hash each other in a cycle. After an owner-approved edit to any
+of them, re-seal the cycle from inside the vault instead of patching hashes by hand:
+
+```bash
+python3 .vault-meta/evolution/reseal-policy.py --check
+python3 .vault-meta/evolution/reseal-policy.py --apply
+```
+
+`--check` never writes. Rebuild the affected zone index afterwards, because rewriting
+a guarded file moves its logical state.
+
 ## Verification
 
 The supported repository check is:
