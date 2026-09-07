@@ -44,7 +44,8 @@
     "i-have-adhd@i-have-adhd": true,
     "hyperframes@hyperframes": true,
     "last30days@last30days-skill": true,
-    "claude-hud@claude-hud": true
+    "claude-hud@claude-hud": true,
+    "design-council@sjsyrek": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -118,10 +119,16 @@
         "source": "github",
         "repo": "jarrodwatts/claude-hud"
       }
+    },
+    "sjsyrek": {
+      "source": {
+        "source": "github",
+        "repo": "sjsyrek/claude-plugins"
+      }
     }
   },
   "language": "{{LANGUAGE}}",
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
   "tui": "fullscreen",
   "agentPushNotifEnabled": true,
   "localPlugins": []

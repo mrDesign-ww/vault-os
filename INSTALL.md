@@ -82,8 +82,9 @@ If selected in the quiz:
 1. Install the Codex desktop app and let the user sign in with their own OpenAI account.
 2. Back up `~/.codex/config.toml`, then merge only the public marketplace and plugin blocks from `shell/codex/config.template.toml`.
 3. Back up `~/.codex/hooks.json`, then render `shell/codex/hooks.template.json` into it with the absolute vault path substituted for `{{VAULT_PATH}}`.
-4. Preserve the user's model, account, MCP servers, desktop settings, and existing hooks.
-5. Never copy `[hooks.state]`. Codex creates its machine-specific trust hashes after the user approves the hooks.
+4. Copy the folders under `shell/claude/skills/` into `~/.codex/skills/` and `~/.agents/skills/`. Codex does not read `~/.claude/skills`, and the bundled design hook looks for `~/.agents/skills/impeccable/scripts/hook.mjs`.
+5. Preserve the user's model, account, MCP servers, desktop settings, and existing hooks.
+6. Never copy `[hooks.state]`. Codex creates its machine-specific trust hashes after the user approves the hooks.
 
 ## 7. Optional ECC integration
 

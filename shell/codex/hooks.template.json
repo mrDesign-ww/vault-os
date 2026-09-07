@@ -21,6 +21,29 @@
             "command": "afplay /System/Library/Sounds/Hero.aiff 2>/dev/null; afplay /System/Library/Sounds/Hero.aiff 2>/dev/null || true"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"$HOME/.agents/skills/impeccable/scripts/hook.mjs\" ] || node \"$HOME/.agents/skills/impeccable/scripts/hook.mjs\"",
+            "timeout": 30,
+            "statusMessage": "Design deep pass"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"$HOME/.agents/skills/impeccable/scripts/hook.mjs\" ] || node \"$HOME/.agents/skills/impeccable/scripts/hook.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking UI changes"
+          }
+        ]
       }
     ]
   }

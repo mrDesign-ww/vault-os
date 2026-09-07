@@ -119,3 +119,18 @@ enabled = true
 # The vault's AGENTS.md (Codex mirror of CLAUDE.md) supplies the operating rules.
 # On first open of the vault, Codex will prompt to trust the project, the plugin
 # hooks, and ~/.codex/hooks.json; that is expected and machine-specific.
+
+# --- Optional MCP servers ----------------------------------------------------
+# Codex reads MCP servers from this file. None ships enabled: each one is the
+# teammate's own account and network boundary. Uncomment what is wanted, then
+# authenticate with a personal account on first use.
+#
+# [mcp_servers.higgsfield]
+# url = "https://mcp.higgsfield.ai/mcp"
+
+# --- Skills ------------------------------------------------------------------
+# Codex does not read ~/.claude/skills. To give it the same toolkit, copy
+# shell/claude/skills/ into BOTH ~/.codex/skills/ and ~/.agents/skills/ (the
+# second path is what the bundled impeccable design hook in hooks.template.json
+# looks for). Skills that ship a Codex variant carry it in their own agents/
+# folder; nothing else changes between the two copies.

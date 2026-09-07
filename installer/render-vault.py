@@ -255,7 +255,12 @@ def bind_trust(root, owner, date, now, vault_id, claude_trace):
         "completion_predecessors": [],
     }
     policy_path = evolution / "reflection-policy.json"
-    write_json(policy_path, policy)
+    # reseal-policy.py rewrites this file as indented, key-sorted JSON. Render it in
+    # that same shape so a freshly installed vault reports an intact chain.
+    policy_path.write_text(
+        json.dumps(policy, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
     policy_hash = sha256(policy_path)
     replace_once(loader, r'^POLICY_SHA256 = "[0-9a-f]{64}"$', 'POLICY_SHA256 = "%s"' % policy_hash)
 

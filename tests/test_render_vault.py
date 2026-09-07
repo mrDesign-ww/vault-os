@@ -46,6 +46,9 @@ class RenderVaultTest(unittest.TestCase):
 
             run([sys.executable, "scripts/memory-model.py", "self-test"], target)
             run([sys.executable, ".vault-meta/evolution/reflection_policy.py"], target)
+            # A freshly rendered vault must already report a sealed hash chain, so a
+            # renderer that writes a guarded file in another shape fails here.
+            run([sys.executable, ".vault-meta/evolution/reseal-policy.py", "--check"], target)
             run([
                 sys.executable, "-c",
                 "import importlib.util; p='.vault-meta/evolution/reflection_policy.py'; "

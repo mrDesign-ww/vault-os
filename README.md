@@ -24,8 +24,11 @@ Vault OS turns a local Obsidian vault into durable, trust-aware memory for AI wo
 - Crash-safe Claude and Codex turn lifecycle tracking.
 - Work-only autonomous reflection with immutable evidence, selection, disposition, and processed receipts.
 - Exact owner approval and SHA-256 binding for L3 doctrine. Reflection can never approve L3.
-- 150 bundled skills and 29 optional Claude plugin entries.
+- 157 bundled skills and 30 optional Claude plugin entries.
 - A deterministic, standard-library installer that refuses non-empty targets and renders all owner and machine-specific identities locally.
+- A lifecycle hook that degrades loudly instead of discarding the turn, plus `reseal-policy.py` to repair the trust-hash chain after an approved edit.
+- Harness-written transcript envelopes are no longer counted as human prompts, so a failed `Stop` can no longer reproduce itself in the next segment.
+- Codex parity for the bundled design hook and a documented path for mirroring skills into `~/.codex/skills` and `~/.agents/skills`.
 
 ## Install
 
@@ -60,7 +63,7 @@ The approval flag must only be used after the owner explicitly approves the bund
 | Integrity | Shared locks, local Git checkpoints, content hashes, authority receipts, fail-closed validation |
 | Evolution | Curator, wiki hygiene, retrieval refresh, adversarial verification, guarded reflection |
 | Agents | Vault-local Claude and Codex contracts, lifecycle hooks, evolution skills |
-| Tooling | 150 bundled skills, 29 optional Claude plugin entries, optional Codex and ECC setup |
+| Tooling | 157 bundled skills, 30 optional Claude plugin entries, optional Codex and ECC setup |
 
 ## Privacy boundary
 
@@ -81,7 +84,7 @@ vault-os/
 │   ├── quiz.md
 │   └── steps.md
 ├── shell/
-│   ├── claude/             # global settings template and 150 skills
+│   ├── claude/             # global settings template and 157 skills
 │   ├── codex/              # public plugin and hook templates
 │   └── vault-template/     # empty vault, memory engine, hooks, and evolution runtime
 ├── tests/
