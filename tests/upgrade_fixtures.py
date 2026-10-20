@@ -16,9 +16,14 @@ sys.path.insert(0, str(ROOT / "installer"))
 from vaultos import fsx, migrate  # noqa: E402
 
 
+# No automatic Git housekeeping in fixture commands, the same flags the installer passes (UPGRADE.md 5.3): started by
+# a commit it runs detached and writes .git/info/refs after the command returned, inside a later snapshot window.
+GIT_QUIET = ("-c", "gc.auto=0", "-c", "maintenance.auto=false")
+
+
 def git(*args, cwd, check=True):
-    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", *args], cwd=str(cwd),
-                          check=check, capture_output=True, text=True)
+    return subprocess.run(["git", *GIT_QUIET, "-c", "user.name=t", "-c", "user.email=t@example.invalid", *args],
+                          cwd=str(cwd), check=check, capture_output=True, text=True)
 
 
 class Machine:

@@ -71,7 +71,8 @@ class RenderVaultTest(unittest.TestCase):
             run(["git", "config", "user.name", "Vault OS Test"], target)
             run(["git", "config", "user.email", "test@example.invalid"], target)
             run(["git", "add", "."], target)
-            run(["git", "commit", "-qm", "Initialize Vault OS"], target)
+            run(["git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "commit", "-qm",
+                 "Initialize Vault OS"], target)
             self_tests = [
                 ["scripts/memory-candidates.py", "self-test"],
                 ["scripts/wiki-lock.py", "self-test"],
@@ -98,7 +99,8 @@ class RenderVaultTest(unittest.TestCase):
                 finally:
                     run(["bash", "scripts/wiki-lock.sh", "release", lock_path, token], target)
             run(["git", "add", ".vault-meta/memory-index"], target)
-            run(["git", "commit", "-qm", "Bind memory index authority"], target)
+            run(["git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "commit", "-qm",
+                 "Bind memory index authority"], target)
             result = json.loads(run([
                 sys.executable, "scripts/memory-model.py", "retrieve",
                 "memory source of truth", "--zone", "work", "--loadout", "general",

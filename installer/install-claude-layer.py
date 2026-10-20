@@ -247,7 +247,10 @@ class Installer:
 
     # ── upstream skills ─────────────────────────────────────────────────────
     def _git(self, *args, cwd=None):
-        return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, timeout=900)
+        # No automatic housekeeping: a fetch starts it detached, and it rewrites the checkout's .git after the
+        # command returned, while the engine copies it (UPGRADE.md 5.3).
+        return subprocess.run(["git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", *args], cwd=cwd,
+                              capture_output=True, text=True, timeout=900)
 
     def _fetch(self, repo, commit, dest):
         """Check out repo at commit into dest: a shallow fetch by commit, else a full clone."""

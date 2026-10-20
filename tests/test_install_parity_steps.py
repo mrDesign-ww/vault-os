@@ -28,8 +28,8 @@ def claude(home, *extra, language="English"):
 
 
 def git(*args, cwd):
-    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", *args], cwd=cwd, check=True,
-                   capture_output=True, text=True)
+    subprocess.run(["git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "user.name=t", "-c",
+                    "user.email=t@example.invalid", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
 class SettingsParityTest(unittest.TestCase):

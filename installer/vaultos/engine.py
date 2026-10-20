@@ -674,13 +674,13 @@ def git_ignored(vault, paths):
         return set()
     tmp = tempfile.mkdtemp(prefix="vault-os-ignore-")
     try:
-        if run(["git", "init", "-q", "--bare", tmp], tmp, timeout=60).returncode:
+        if run([*manifest.GIT, "init", "-q", "--bare", tmp], tmp, timeout=60).returncode:
             return set()
         exclude = os.path.join(vault, ".git", "info", "exclude")
         if os.path.isfile(exclude):
             os.makedirs(os.path.join(tmp, "info"), exist_ok=True)
             shutil.copyfile(exclude, os.path.join(tmp, "info", "exclude"))
-        out = subprocess.run(["git", "-c", "core.excludesFile=" + os.devnull, "--git-dir=" + tmp,
+        out = subprocess.run([*manifest.GIT, "-c", "core.excludesFile=" + os.devnull, "--git-dir=" + tmp,
                               "--work-tree=" + vault, "check-ignore", "--no-index", "--stdin", "-z"],
                              input="\0".join(paths) + "\0", cwd=vault, env=child_env(), capture_output=True,
                              text=True, timeout=300)
@@ -1374,7 +1374,7 @@ def apply_migration(archive, ctx, vault, log):
 
 
 def git(vault, *args, identity=False):
-    cmd = ["git"]
+    cmd = list(manifest.GIT)
     if identity:
         cmd += ["-c", "user.name=Vault OS", "-c", "user.email=vault-os@localhost"]
     return run(cmd + list(args), vault, timeout=300)

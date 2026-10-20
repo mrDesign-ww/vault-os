@@ -356,6 +356,21 @@ A rollback right after an upgrade returns the exact previous tree, and a rollbac
 write. The upgrade's Git commits stay in the object store as unreferenced objects until `git gc` prunes them later;
 the rollback never deletes them itself.
 
+Git housekeeping is not a tool change. Every git command the installer runs carries `-c gc.auto=0 -c
+maintenance.auto=false`, so an upgrade starts no automatic housekeeping (`gc --auto`, `git maintenance run --auto`):
+a commit or a fetch starts it detached, and it rewrites Git internals after the command returned (a repack writes
+`.git/info/refs`). The person's own Git (Obsidian Git, scheduled maintenance) can still run it during an upgrade. The
+archive neither backs up nor restores what housekeeping writes; that is the person's, like a note edited meanwhile:
+
+- The object store (`.git/objects/`: loose objects, packs, the multi-pack index, the commit graph, `info/packs`) is
+  never restored or displaced. A repack deletes the loose copies and the old packs of what it packs, so putting the
+  earlier pack set back loses objects (`git fsck`: bad object HEAD).
+- `.git/info/refs` stays as it is: `git update-server-info` writes it for serving the repository over dumb HTTP,
+  nothing local reads it, and the next repack rewrites it.
+- Nothing else is exempt. `packed-refs` is Git metadata, backed up, settled and restored with the refs as above;
+  working-tree files, `HEAD`, refs, logs and the index follow the rules above, and the tests compare every file
+  outside the object store exactly.
+
 `recover` rolls back, unattended, every upgrade whose journal has no commit record (a killed process, a crash, a power
 cut) to the exact previous tree, then clears the lock. It checks the lock's pid first: while that process lives (an
 upgrade still running) it refuses with exit 4 and touches nothing; a missing or bad pid counts as dead. An upgrade
@@ -470,6 +485,7 @@ and the apply stops the upgrade. Obsidian settings that name a moved folder are 
 - Writes are atomic (temporary file and rename). A move that fails (for example across a mount point inside the
   vault) fails the upgrade, which then rolls back.
 - One upgrade at a time (the lock in the backup root).
+- No Git housekeeping from the installer: every git command carries `-c gc.auto=0 -c maintenance.auto=false` (5.3).
 - No network access except the version check, the `git clone` the skill runs, and the pinned upstream fetches when
   selected.
 
@@ -510,6 +526,9 @@ homes:
   inside a zone; anything at a move destination makes the move take a free name; exit 0 implies `--confirm` exit
   0; every original file and link is byte-identical somewhere in the vault (a config path or owned folder: in the
   archive; a mixed file: the person's part kept); link targets untouched; parity 0; a no-op second plan; an exact
-  forced rollback. Plus the phase order and the warning for a link whose folder target moves;
+  forced rollback. Plus the phase order and the warning for a link whose folder target moves, and a sample of the
+  matrix (the baseline, every 80th case, the two cases of CI run 39506112345) while the person's Git runs
+  housekeeping after every commit (`gc.auto=1` in the temporary `HOME`, two loose objects in the sampled shard);
+  fixture git commands carry the installer's no-housekeeping flags, so the harness is deterministic;
 - the SessionStart check: no stamp, interrupted, current, outdated and cached, offline, subagent, off, bad input,
   and its wiring in `hooks.json` and the installer.

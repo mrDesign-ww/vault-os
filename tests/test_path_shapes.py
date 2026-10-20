@@ -15,13 +15,18 @@ link to a folder, dangling link, link chain) in a fresh foreign vault with Git, 
   mixed file keeps the person's key or line);
 - link targets outside the vault are untouched, parity is 0, a second plan is a no-op;
 - a forced rollback of the archive returns the exact tree.
+
+HousekeepingTest runs a sample of the matrix while the person's Git starts housekeeping after every commit (CI run
+39506112345: a detached repack wrote .git/info/refs inside a dry run and after a rollback).
 """
 import collections
 import concurrent.futures
+import hashlib
 import json
 import os
 import posixpath
 import shutil
+import subprocess
 import sys
 import tempfile
 import types
@@ -44,6 +49,8 @@ BASE = {  # Home.md sorts before wiki (SPOT-CHECK-2 MAJOR-1); the others land be
 OUTSIDE = {"target-file.txt": "outside file\n", "target-dir/inside.txt": "outside folder\n"}
 POSIX = not sys.platform.startswith("win")
 TOOL_DIRS = [p for p in engine.VAULT_TOOL_PATHS if "." not in posixpath.basename(p)]  # folders the vault tools write
+# The person's Git config in the temporary HOME: automatic housekeeping after every commit, in the foreground.
+HOUSEKEEPING = "[gc]\n\tauto = 1\n\tautoDetach = false\n[maintenance]\n\tauto = true\n\tautoDetach = false\n"
 
 
 def changed_paths(before, after):
@@ -94,7 +101,24 @@ def make_shape(m, rel, shape, kind):
         os.symlink(str(outside / ("hop-dir" if kind == "folder" else "hop-file")), str(path))
 
 
-def machine(rel=None, shape="absent", kind="file"):
+def force_housekeeping(m):
+    """Every later commit under m's HOME runs Git housekeeping: the config above, and two loose objects in objects/17,
+    the shard Git samples to estimate the loose objects (the auto conditions of gc and of the geometric repack both
+    pass at two). The objects are unreachable blobs; the snapshots exclude the object store."""
+    (m.home / ".gitconfig").write_text(HOUSEKEEPING, encoding="utf-8")
+    planted, i = 0, 0
+    while planted < 2:
+        body = b"housekeeping trigger %d\n" % i
+        i += 1
+        if hashlib.sha1(b"blob %d\0" % len(body) + body).hexdigest().startswith("17"):
+            out = subprocess.run(["git", *F.GIT_QUIET, "hash-object", "-w", "--stdin"], input=body, cwd=str(m.vault),
+                                 check=True, capture_output=True)
+            if not out.stdout.startswith(b"17"):
+                raise AssertionError("the fixture vault does not use SHA-1 object names")
+            planted += 1
+
+
+def machine(rel=None, shape="absent", kind="file", housekeeping=False):
     m = F.Machine()
     write_tree(m.home / "outside", OUTSIDE)
     os.symlink(str(m.home / "outside" / "target-dir"), str(m.home / "outside" / "hop-dir"))
@@ -105,6 +129,8 @@ def machine(rel=None, shape="absent", kind="file"):
     F.git("init", "-q", cwd=m.vault)
     F.git("add", "-A", cwd=m.vault)
     F.git("commit", "-qm", "my vault", cwd=m.vault)
+    if housekeeping:
+        force_housekeeping(m)
     return m
 
 
@@ -187,9 +213,9 @@ class Matrix:
             return False
         return shape not in ("absent", kind)
 
-    def run(self, rel, shape, kind):
+    def run(self, rel, shape, kind, housekeeping=False):
         """[problems] of one case and its outcome ("question" or "upgraded")."""
-        m = machine(rel, shape, kind)
+        m = machine(rel, shape, kind, housekeeping)
         problems = []
         try:
             return self._run(m, rel, shape, kind, problems), problems
@@ -343,6 +369,35 @@ class PathShapeMatrixTest(unittest.TestCase):
         sys.stderr.write("\npath-shape matrix: %d cases (%d paths x %d shapes + the baseline): %s\n"
                          % (len(matrix.cases), len(matrix.paths), len(SHAPES) - 1, dict(outcomes)))
         self.assertEqual(failed, [], "%d of %d cases failed" % (len(failed), len(matrix.cases)))
+
+
+@unittest.skipUnless(POSIX, "the upgrade runs on POSIX")
+class HousekeepingTest(unittest.TestCase):
+    """The installer starts no Git housekeeping (UPGRADE.md 5.3): with the person's Git set to run it after every
+    commit, a sample of the matrix keeps every check, the exact rollback included. The sample holds the two cases of
+    CI run 39506112345, the baseline and every 80th case."""
+
+    def test_the_matrix_holds_while_git_would_run_housekeeping(self):
+        control = machine(housekeeping=True)
+        try:  # the forced condition is real: the person's own commit runs housekeeping, which writes info/refs
+            out = subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q",
+                                  "--allow-empty", "-m", "mine"], cwd=str(control.vault), env=control.env(),
+                                 capture_output=True, text=True)
+            self.assertEqual(out.returncode, 0, out.stderr)
+            self.assertTrue((control.vault / ".git" / "info" / "refs").exists(),
+                            "the forced housekeeping no longer runs on this Git; the trigger needs an update")
+        finally:
+            control.cleanup()
+        matrix = Matrix()
+        named = [c for c in matrix.cases if c[:2] in ((".agents/skills", "link to folder"),
+                                                       (".obsidian/app.json", "link to file"))]
+        self.assertEqual(len(named), 2, "the two cases of CI run 39506112345 left the matrix")
+        sample = named + [c for c in matrix.cases[::80] if c not in named]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=jobs()) as pool:
+            results = dict(zip(sample, pool.map(lambda case: matrix.run(*case, housekeeping=True), sample)))
+        failed = sorted(("%s as %s" % (rel, shape), problems) for (rel, shape, _), (_, problems) in results.items()
+                        if problems)
+        self.assertEqual(failed, [], "%d of %d sampled cases failed" % (len(failed), len(sample)))
 
 
 if __name__ == "__main__":

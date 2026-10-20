@@ -157,9 +157,15 @@ def stage_codex(repo, icl, icx, answers, homes, stage):
 
 # ── upstream skills ─────────────────────────────────────────────────────────
 
+# Every git command the installer runs: no automatic housekeeping (gc --auto, git maintenance run --auto). A commit or
+# fetch starts it detached, and it rewrites Git internals (.git/info/refs, packs) after the command returned
+# (UPGRADE.md 5.3).
+GIT = ("git", "-c", "gc.auto=0", "-c", "maintenance.auto=false")
+
+
 def git_head(path):
     try:
-        out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=path, capture_output=True, text=True, timeout=30)
+        out = subprocess.run([*GIT, "rev-parse", "HEAD"], cwd=path, capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return None
     return out.stdout.strip() if out.returncode == 0 else None
