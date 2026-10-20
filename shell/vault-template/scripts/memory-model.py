@@ -746,11 +746,12 @@ def load_evals():
     for case in cases:
         required = {
             "id", "query", "loadout", "top", "must_paths", "must_contain",
-            "must_not_contain", "path_assertions", "expected_public_sha256",
+            "must_not_contain", "path_assertions",
         }
         optional = {
             "project", "include_l0", "include_stale", "required_levels",
-            "require_stale", "forbidden_path_prefixes",
+            "require_stale", "forbidden_path_prefixes", "must_rank_first",
+            "expected_public_sha256",
         }
         if (
             not isinstance(case, dict) or not required.issubset(case)
@@ -770,7 +771,12 @@ def load_evals():
             raise ValueError("memory evaluation loadout is invalid")
         if not isinstance(case["top"], int) or isinstance(case["top"], bool) or not 1 <= case["top"] <= 20:
             raise ValueError("memory evaluation top is invalid")
-        if (
+        rank_first = case.get("must_rank_first")
+        if rank_first is not None and (
+            not isinstance(rank_first, str) or not rank_first.strip()
+        ):
+            raise ValueError("memory evaluation must_rank_first is invalid")
+        if "expected_public_sha256" in case and (
             type(case["expected_public_sha256"]) is not str
             or not CANDIDATE_SHA256_RE.fullmatch(case["expected_public_sha256"])
         ):
@@ -1214,8 +1220,26 @@ def scan_zone(zone, records=None):
     }
 
 
+# ponytail: light Russian suffix stripping (Snowball noun/adjective endings, no verbs,
+# no fleeting vowels). Upgrade to full Snowball if recall on verb forms matters.
+RU_ENDINGS = sorted(
+    "иями ями ами ией иям иях ием ого его ому ему ыми ими ая яя ое ее ой ей ий ый ую юю "
+    "ые ие ых их ым им ом ем ам ям ах ях ов ев ия ья ье ии ию ью а я о е ы и у ю ь й".split(),
+    key=len, reverse=True,
+)
+
+
+def stem(token):
+    token = token.replace("ё", "е")
+    if "а" <= token[-1:] <= "я":
+        for ending in RU_ENDINGS:
+            if token.endswith(ending) and len(token) - len(ending) >= 3:
+                return token[:-len(ending)]
+    return token
+
+
 def tokenize(text):
-    return [token.lower() for token in TOKEN_RE.findall(text)]
+    return [stem(token.lower()) for token in TOKEN_RE.findall(text)]
 
 
 def split_block(block, max_chars):
@@ -1292,7 +1316,7 @@ def query_snippet(text, query_terms, max_chars=500):
     content_chars = max_chars - 4 if decorate else max_chars
     terms = {term.casefold() for term in query_terms if term}
     tokens = [
-        (match.start(), match.end(), match.group(0).casefold())
+        (match.start(), match.end(), stem(match.group(0).casefold()))
         for match in TOKEN_RE.finditer(text)
     ]
     matches = [item for item in tokens if item[2] in terms]
@@ -2635,6 +2659,25 @@ def retrieve(
     return result
 
 
+NUMERIC_TERM_RE = re.compile(r"\d[\d\s.,/:%]*")
+
+
+def term_present(term, text):
+    """Substring match, except that a purely numeric term must not sit inside a longer number."""
+    needle = term.casefold()
+    if NUMERIC_TERM_RE.fullmatch(needle):
+        return re.search(r"(?<!\d)" + re.escape(needle) + r"(?!\d)", text) is not None
+    return needle in text
+
+
+def golden_hash_state(case, public_sha256):
+    """Exact public-result pin is optional; an unpinned case is judged by semantics only."""
+    expected = case.get("expected_public_sha256")
+    if expected is None:
+        return "unpinned"
+    return "match" if public_sha256 == expected else "drift"
+
+
 def evaluate_retrieval(zone):
     manifest, manifest_sha256 = load_evals()
     if zone != manifest["zone"]:
@@ -2650,12 +2693,13 @@ def evaluate_retrieval(zone):
         )
         receipt = validate_result_receipt(result)
         public_sha256 = snapshot_digest(golden_result_projection(result))
-        if public_sha256 != case["expected_public_sha256"]:
-            raise ValueError("evaluation %s public result differs from its golden result" % case["id"])
         candidates = result["candidates"]
         limits = result["context_budget"]["limits"]
         used = result["context_budget"]["used"]
         role = roles[case["loadout"]]
+        # Semantic assertions run first and for every case, so a golden-hash drift
+        # is reported together with the evidence that the answer is still right.
+        failures = []
         if (
             used["items"] != len(candidates) or used["items"] > limits["items"]
             or used["snippet_chars"] > limits["snippet_chars"]
@@ -2665,7 +2709,7 @@ def evaluate_retrieval(zone):
                 for level in ("l0", "l1", "l2")
             )
         ):
-            raise ValueError("evaluation %s exceeded its context budget" % case["id"])
+            failures.append("context-budget")
         if any(
             (item["chunk_stale"] and not case.get("include_stale", False))
             or (item["memory_level"] == "l0" and not case.get("include_l0", False))
@@ -2675,30 +2719,44 @@ def evaluate_retrieval(zone):
             )
             for item in candidates
         ):
-            raise ValueError("evaluation %s returned excluded context" % case["id"])
+            failures.append("excluded-context")
         levels = {item["memory_level"] for item in candidates}
         if not set(case.get("required_levels", [])).issubset(levels):
-            raise ValueError("evaluation %s missed a required memory level" % case["id"])
+            failures.append("required-levels")
         if case.get("require_stale", False) and not any(
             item["chunk_stale"] for item in candidates
         ):
-            raise ValueError("evaluation %s missed required historical context" % case["id"])
+            failures.append("required-historical-context")
         if any(
             item["page_path"].startswith(prefix)
             for item in candidates
             for prefix in case.get("forbidden_path_prefixes", [])
         ):
-            raise ValueError("evaluation %s crossed a forbidden project path" % case["id"])
+            failures.append("forbidden-project-path")
         paths = {item["page_path"] for item in candidates}
         missing_paths = [path for path in case["must_paths"] if path not in paths]
+        if missing_paths:
+            failures.append("missing-paths=%s" % missing_paths)
+        rank_first = case.get("must_rank_first")
+        if rank_first is not None and (
+            not candidates or candidates[0]["page_path"] != rank_first
+        ):
+            failures.append(
+                "rank-first=%s" % (candidates[0]["page_path"] if candidates else None)
+            )
         searchable = "\n".join(
             item["title"] + "\n" + item["snippet"] for item in candidates
         ).casefold()
-        missing_terms = [term for term in case["must_contain"] if term.casefold() not in searchable]
-        forbidden_terms = [
-            term for term in case["must_not_contain"]
-            if term.casefold() in searchable
+        missing_terms = [
+            term for term in case["must_contain"] if not term_present(term, searchable)
         ]
+        forbidden_terms = [
+            term for term in case["must_not_contain"] if term_present(term, searchable)
+        ]
+        if missing_terms:
+            failures.append("missing-terms=%s" % missing_terms)
+        if forbidden_terms:
+            failures.append("forbidden-terms=%s" % forbidden_terms)
         path_failures = []
         for assertion in case["path_assertions"]:
             path_text = "\n".join(
@@ -2707,11 +2765,11 @@ def evaluate_retrieval(zone):
             ).casefold()
             path_missing = [
                 term for term in assertion["must_contain"]
-                if term.casefold() not in path_text
+                if not term_present(term, path_text)
             ]
             path_forbidden = [
                 term for term in assertion["must_not_contain"]
-                if term.casefold() in path_text
+                if term_present(term, path_text)
             ]
             if path_missing or path_forbidden:
                 path_failures.append({
@@ -2719,20 +2777,26 @@ def evaluate_retrieval(zone):
                     "missing": path_missing,
                     "forbidden": path_forbidden,
                 })
-        if missing_paths or missing_terms or forbidden_terms or path_failures:
-            raise ValueError(
-                "evaluation %s failed paths=%s missing=%s forbidden=%s path_assertions=%s"
-                % (
-                    case["id"], missing_paths, missing_terms,
-                    forbidden_terms, path_failures,
-                )
-            )
+        if path_failures:
+            failures.append("path-assertions=%s" % path_failures)
+        hash_state = golden_hash_state(case, public_sha256)
         results.append({
-            "id": case["id"], "passed": True,
+            "id": case["id"],
+            "passed": not failures and hash_state != "drift",
+            "semantics": "pass" if not failures else failures,
+            "hash": hash_state,
             "receipt_sha256": receipt["receipt_sha256"],
             "public_sha256": public_sha256,
             "selected_paths": [item["page_path"] for item in candidates],
         })
+    failed = [item for item in results if not item["passed"]]
+    if failed:
+        raise ValueError(
+            "evaluations failed: " + "; ".join(
+                "%s hash=%s semantics=%s" % (item["id"], item["hash"], item["semantics"])
+                for item in failed
+            )
+        )
     return {
         "schema_version": 1,
         "zone": zone,
@@ -2999,6 +3063,10 @@ def self_test():
     assert len(loadout_sha256) == 64 and loadout_manifest["default"] == "general"
     eval_manifest, eval_sha256 = load_evals()
     assert len(eval_sha256) == 64 and eval_manifest["zone"] == "work"
+    # A case without an exact public hash is judged by its semantic checks only.
+    assert golden_hash_state({}, "a" * 64) == "unpinned"
+    assert golden_hash_state({"expected_public_sha256": "a" * 64}, "a" * 64) == "match"
+    assert golden_hash_state({"expected_public_sha256": "a" * 64}, "b" * 64) == "drift"
     assert resolve_loadout("general", None, False, None)[4] == 8
     try:
         resolve_loadout("reviewer", None, False, None)
@@ -3489,7 +3557,23 @@ def self_test():
             assert len(retained) == 1 and retained[0].read_bytes() == predecessor_bytes
     finally:
         globals()["INDEX_DIR"] = original_index_dir
-    assert tokenize("Hello, Память 42") == ["hello", "память", "42"]
+    assert tokenize("Hello, Память 42") == ["hello", "памят", "42"]
+    assert tokenize("лимиты лимитов лимитами limits Routing") == [
+        "лимит", "лимит", "лимит", "limits", "routing",
+    ]
+    assert len(set(tokenize("маршрутизация маршрутизации маршрутизацией"))) == 1
+    assert tokenize("его эти всё") == ["его", "эти", "все"]
+    assert "лимиты" in query_snippet("x " * 300 + "лимиты бэк-офиса", tokenize("лимит"), 60)
+    brief = brief_text({
+        "query": "q", "zone": "work", "project": None, "loadout": {"name": "general"},
+        "l3_loadout": [{"page_path": "a.md", "title": "A"}],
+        "candidates": [{
+            "memory_level": "l2", "memory_trust": "explicit", "chunk_stale": True,
+            "page_path": "b.md", "title": "B", "snippet": "word\n" * 100,
+        }],
+    })
+    assert brief.splitlines()[1:3] == ["L3 approved | a.md | A", "L2 explicit stale | b.md | B"]
+    assert len(brief.splitlines()[3]) <= 204
     assert chunk_body("# A\n\nOne\n\n# B\n\nTwo")
     excerpt = query_snippet(
         ("intro " * 120) + "274 из 274 " + ("middle " * 20) + "848 обложек",
@@ -3976,6 +4060,26 @@ def self_test():
     print("memory-model self-test: PASS")
 
 
+def brief_text(result, snippet_chars=200):
+    """Compact retrieve view: no hashes, receipts or budgets. Not receipt-verifiable."""
+    lines = ['"%s" zone=%s loadout=%s project=%s items=%d' % (
+        result["query"], result["zone"], result["loadout"]["name"],
+        result["project"] or "-", len(result["candidates"]),
+    )]
+    for page in result["l3_loadout"]:
+        lines.append("L3 approved | %s | %s" % (page["page_path"], page["title"]))
+    for item in result["candidates"]:
+        snippet = " ".join(item["snippet"].split())
+        if len(snippet) > snippet_chars:
+            snippet = snippet[:snippet_chars].rsplit(" ", 1)[0] + " …"
+        lines.append("%s %s%s | %s | %s\n  %s" % (
+            item["memory_level"].upper(), item["memory_trust"],
+            " stale" if item["chunk_stale"] else "",
+            item["page_path"], item["title"], snippet,
+        ))
+    return "\n".join(lines)
+
+
 def add_query_arguments(parser):
     parser.add_argument("query")
     parser.add_argument("--zone", choices=("work", "personal", "client"), default="work")
@@ -4001,6 +4105,10 @@ def main():
     validate_parser.add_argument("--lock-token")
     retrieve_parser = subparsers.add_parser("retrieve", help="Retrieve an L3, L2, L1 loadout")
     add_query_arguments(retrieve_parser)
+    retrieve_parser.add_argument(
+        "--brief", action="store_true",
+        help="Compact text: level, trust, path, title and a short snippet per item",
+    )
     inspect_parser = subparsers.add_parser("inspect", help="Explain a budgeted context loadout")
     add_query_arguments(inspect_parser)
     evaluate_parser = subparsers.add_parser("evaluate", help="Run fixed retrieval quality checks")
@@ -4048,12 +4156,16 @@ def main():
             }, ensure_ascii=False, indent=2))
             return EXIT_OK
         if args.command in {"retrieve", "inspect"}:
-            print(json.dumps(retrieve(
+            result = retrieve(
                 args.query, args.zone, top=args.top, include_l0=args.include_l0,
                 include_stale=args.include_stale, project=args.project,
                 loadout_name=args.loadout, explain=args.command == "inspect",
                 lock_token=args.lock_token,
-            ), ensure_ascii=False, indent=2))
+            )
+            if getattr(args, "brief", False):
+                print(brief_text(result))
+            else:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
             return EXIT_OK
         if args.command == "evaluate":
             print(json.dumps(evaluate_retrieval(args.zone), ensure_ascii=False, indent=2))

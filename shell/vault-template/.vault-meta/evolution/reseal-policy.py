@@ -35,6 +35,8 @@ DOCTRINE = "wiki/resources/concepts/Autonomous Reflection Delegation Policy.md"
 GENERATION_ROOTS = (
     ".vault-meta/evolution/trace-open/work",
     ".vault-meta/evolution/trace-completions/work",
+    # A drain-only generation (scan receipts, no completions of its own) must be pinned too.
+    ".vault-meta/evolution/trace-scan-receipts/work",
 )
 
 # Mirrors load_policy() in reflection_policy.py. Keep both lists in step.

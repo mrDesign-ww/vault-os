@@ -35,13 +35,13 @@ ZONES = {
 SERVICE = {"index", "_index", "hot", "log", "overview", "dashboard"}
 WIKILINK = re.compile(r"!?\[\[([^\]|#]+)")
 FM_FIELDS = ("type", "status", "created", "updated", "tags")
-ATTACH = re.compile(r"\.(png|jpe?g|gif|svg|pdf|canvas|excalidraw|webp|mp4|mov)$", re.I)
-NUMERIC_VECTOR = re.compile(r"^-?\d+(?:\.\d+)?(?:\s*,\s*-?\d+(?:\.\d+)?)+$")
+ATTACH = re.compile(r"\.(png|jpe?g|gif|svg|pdf|canvas|excalidraw|webp|mp4|mov|m4a|mp3|wav|ogg|flac|aac)$", re.I)
+NUMERIC_VECTOR = re.compile(r"^[-−]?\d+(?:\.\d+)?(?:\s*,\s*[-−]?\d+(?:\.\d+)?)+$")
 HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
 TITLE = re.compile(r"(?m)^title:\s*[\"']?([^\"'\n]+)")
 EXCLUDED_DIRS = {"node_modules", ".git", ".next", "dist", "build", "coverage"}
-IMMUTABLE_PARTS = {"sources", "incoming", "inbox", "agent-memory", "raw"}
-ARTIFACT_PARTS = {"assets", "prototype-v2", "prototype-dev", "versions"}
+IMMUTABLE_PARTS = {"sources", "incoming", "inbox", "agent-memory", "raw", "evidence"}
+ARTIFACT_PARTS = {"assets", "prototype-v2", "prototype-dev", "versions", "decisions"}
 ARTIFACT_NAMES = re.compile(
     r"^(README|RETIRED|VERSION|(?:APPROVED_)?ASSET_|IMPLEMENTATION_BRIEF_|out_)",
     re.I,

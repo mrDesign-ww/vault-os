@@ -51,6 +51,18 @@ command местами хочу think work zone task""".split())
 TERM = re.compile(r"[a-zа-яё0-9]{4,}", re.I)
 
 
+FRICTION_HEAD_CHARS = 80
+FRICTION_SHORT_CHARS = 200
+
+
+def friction_hit(pattern, text):
+    """A correction opens a message or is a short message; a negation inside a long brief is not friction."""
+    # ponytail: position and length heuristic, retune the two constants if precision or recall drifts
+    return bool(pattern.search(text[:FRICTION_HEAD_CHARS])) or (
+        len(text) <= FRICTION_SHORT_CHARS and bool(pattern.search(text))
+    )
+
+
 def check_lock(token):
     if not isinstance(token, str) or not SHA256_RE.fullmatch(token):
         raise ValueError("writer-lock")
@@ -83,7 +95,7 @@ def real_user_text(item, platform):
         message = item.get("message")
         if not isinstance(message, dict) or message.get("role") != "user":
             return None
-        kind, text = POLICY.claude_user_message(message)
+        kind, text = POLICY.claude_user_message(message, meta=item.get("isMeta") is True)
         if kind == "invalid":
             raise ValueError("trace-stop-shape")
         if kind == "continuation":
@@ -127,7 +139,9 @@ def read_segment(record, policy, analyze=True):
             or before.st_uid != os.getuid()
             or before.st_mode & (stat.S_IWGRP | stat.S_IWOTH)
             or before.st_nlink != 1
-            or before.st_dev != expected_identity["device"]
+            # st_dev is not compared: APFS assigns device numbers at mount, so a reboot
+            # changes it for every trace. The pinned root, the inode and the segment
+            # sha256 below still bind the exact bytes.
             or before.st_ino != expected_identity["inode"]
         ):
             raise ValueError("trace-identity")
@@ -170,21 +184,31 @@ def read_segment(record, policy, analyze=True):
         if len(starts) != 1 or len(completes) != 1:
             raise ValueError("trace-terminal-markers")
     else:
+        expected = record.get("prompt_sha256")
         user_hashes = []
-        assistant_after_user = False
+        harness_prompt = False
+        assistant_after_prompt = False
         for item in parsed:
             message = item.get("message") if isinstance(item, dict) else None
             role = message.get("role") if isinstance(message, dict) else None
             if item.get("type") == "user" and role == "user":
-                kind, text = POLICY.claude_user_message(message)
+                kind, text = POLICY.claude_user_message(message, meta=item.get("isMeta") is True)
                 if kind == "invalid":
                     raise ValueError("trace-stop-shape")
                 if kind == "continuation":
+                    # A hook contract that predates the current harness prefix list
+                    # registered this envelope (for example a task notification) as
+                    # the prompt. It is recognised only by the exact registered hash,
+                    # carries no human text and therefore verifies with zero signals.
+                    if POLICY.claude_user_envelope_sha256(message) == expected:
+                        harness_prompt = True
                     continue
                 user_hashes.append(hashlib.sha256(text.encode("utf-8")).hexdigest())
-            elif item.get("type") == "assistant" and role == "assistant" and user_hashes:
-                assistant_after_user = True
-        if user_hashes != [record.get("prompt_sha256")] or not assistant_after_user:
+            elif item.get("type") == "assistant" and role == "assistant" and (user_hashes or harness_prompt):
+                assistant_after_prompt = True
+        if user_hashes:
+            harness_prompt = False
+        if (user_hashes != [expected] and not harness_prompt) or not assistant_after_prompt:
             raise ValueError("trace-stop-shape")
     if not analyze:
         return {"record": record, "signals": [], "terms": set()}
@@ -199,7 +223,7 @@ def read_segment(record, policy, analyze=True):
         message_ordinal += 1
         message_sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
         for pattern, kind in FRICTION:
-            if pattern.search(text):
+            if friction_hit(pattern, text):
                 signal_id = hashlib.sha256((
                     record["receipt_sha256"] + "\0" + str(message_ordinal)
                     + "\0" + kind + "\0" + message_sha
@@ -403,6 +427,15 @@ def self_test():
         }
         snapshot = read_segment(record, {"roots": {"trace_codex": str(trace_root)}})
         assert snapshot["signals"][0]["kind"] == "correction"
+        rebooted = dict(record, trace_identity={"device": metadata.st_dev + 1, "inode": metadata.st_ino})
+        assert read_segment(rebooted, {"roots": {"trace_codex": str(trace_root)}})["signals"][0]["signal_id"] == snapshot["signals"][0]["signal_id"]
+        swapped = dict(record, trace_identity={"device": metadata.st_dev, "inode": metadata.st_ino + 1})
+        try:
+            read_segment(swapped, {"roots": {"trace_codex": str(trace_root)}})
+        except ValueError as error:
+            assert str(error) == "trace-identity"
+        else:
+            raise AssertionError("trace with another inode was accepted")
         with trace.open("ab") as handle:
             handle.write(b'{"type":"event_msg"}\n')
         assert read_segment(record, {"roots": {"trace_codex": str(trace_root)}})["signals"][0]["signal_id"] == snapshot["signals"][0]["signal_id"]
@@ -463,6 +496,34 @@ def self_test():
         assert read_segment(
             tool_record, {"roots": {"trace_claude": str(trace_root)}},
         )["record"] == tool_record
+        # Harness-marked messages inside a turn neither break its shape nor count as friction.
+        marked_lines = [
+            {"type": "user", "message": {"role": "user", "content": "рабочий вопрос"}},
+            {"type": "user", "isMeta": True, "message": {"role": "user", "content": [
+                {"type": "text", "text": "[Image: source: /private/tmp/shot.png]"}]}},
+            {"type": "user", "isMeta": True, "message": {
+                "role": "user", "content": "Another Claude session sent a message: не так, исправь"}},
+            {"type": "user", "message": {
+                "role": "user", "content": "<local-command-stdout>ok</local-command-stdout>"}},
+            {"type": "assistant", "message": {"role": "assistant", "content": "ответ"}},
+        ]
+        marked_segment = b"".join(
+            json.dumps(item, ensure_ascii=False).encode("utf-8") + b"\n"
+            for item in marked_lines
+        )
+        claude_trace.write_bytes(marked_segment)
+        marked_meta = claude_trace.stat()
+        marked_record = {
+            **claude_record,
+            "trace_identity": {"device": marked_meta.st_dev, "inode": marked_meta.st_ino},
+            "segment_end": len(marked_segment), "segment_size": len(marked_segment),
+            "segment_sha256": hashlib.sha256(marked_segment).hexdigest(),
+        }
+        marked_snapshot = read_segment(
+            marked_record, {"roots": {"trace_claude": str(trace_root)}},
+        )
+        assert marked_snapshot["record"] == marked_record
+        assert marked_snapshot["signals"] == []
         mixed_segment = claude_segment + json.dumps({
             "type": "user", "message": {"role": "user", "content": "личное: не сканировать"},
         }, ensure_ascii=False).encode("utf-8") + b"\n"
@@ -480,6 +541,86 @@ def self_test():
             assert str(error) == "trace-stop-shape"
         else:
             raise AssertionError("mixed Claude prompts were accepted")
+        notice = "<task-notification>\n<task-id>t-1</task-id>\n<status>completed</status>"
+        harness_lines = [
+            {"type": "user", "message": {"role": "user", "content": notice}},
+            {"type": "assistant", "message": {"role": "assistant", "content": "продолжаю"}},
+        ]
+        harness_segment = b"".join(
+            json.dumps(item, ensure_ascii=False).encode("utf-8") + b"\n"
+            for item in harness_lines
+        )
+        claude_trace.write_bytes(harness_segment)
+        harness_meta = claude_trace.stat()
+        harness_record = {
+            **claude_record,
+            "trace_identity": {"device": harness_meta.st_dev, "inode": harness_meta.st_ino},
+            "segment_end": len(harness_segment), "segment_size": len(harness_segment),
+            "segment_sha256": hashlib.sha256(harness_segment).hexdigest(),
+            "prompt_sha256": hashlib.sha256(notice.encode("utf-8")).hexdigest(),
+        }
+        harness_snapshot = read_segment(
+            harness_record, {"roots": {"trace_claude": str(trace_root)}},
+        )
+        assert harness_snapshot["record"] == harness_record
+        assert harness_snapshot["signals"] == [] and harness_snapshot["terms"] == set()
+        try:
+            read_segment(
+                {**harness_record, "prompt_sha256": "1" * 64},
+                {"roots": {"trace_claude": str(trace_root)}},
+            )
+        except ValueError as error:
+            assert str(error) == "trace-stop-shape"
+        else:
+            raise AssertionError("unregistered harness envelope was accepted as a prompt")
+        # A matching envelope never launders a different human prompt into the segment.
+        mixed_harness = harness_segment + json.dumps({
+            "type": "user", "message": {"role": "user", "content": "другой вопрос"},
+        }, ensure_ascii=False).encode("utf-8") + b"\n" + json.dumps({
+            "type": "assistant", "message": {"role": "assistant", "content": "ответ"},
+        }, ensure_ascii=False).encode("utf-8") + b"\n"
+        claude_trace.write_bytes(mixed_harness)
+        mixed_harness_meta = claude_trace.stat()
+        mixed_harness_record = {
+            **harness_record,
+            "trace_identity": {"device": mixed_harness_meta.st_dev, "inode": mixed_harness_meta.st_ino},
+            "segment_end": len(mixed_harness), "segment_size": len(mixed_harness),
+            "segment_sha256": hashlib.sha256(mixed_harness).hexdigest(),
+        }
+        try:
+            read_segment(
+                mixed_harness_record, {"roots": {"trace_claude": str(trace_root)}},
+            )
+        except ValueError as error:
+            assert str(error) == "trace-stop-shape"
+        else:
+            raise AssertionError("harness envelope plus a foreign human prompt was accepted")
+        # Friction is positional: a negation buried in a long brief is not a correction,
+        # a short correction is.
+        brief = "Проведи финальный аудит, проверь все токены и компонент, подумай, что можно оптимизировать, и приложи отчёт с цифрами; " * 2 + "если нет, не нужно."
+        assert len(brief) > FRICTION_SHORT_CHARS
+        for content, expected_kinds in ((brief, []), ("не так, исправь", ["correction"])):
+            friction_lines = [
+                {"type": "user", "message": {"role": "user", "content": content}},
+                {"type": "assistant", "message": {"role": "assistant", "content": "ответ"}},
+            ]
+            friction_segment = b"".join(
+                json.dumps(item, ensure_ascii=False).encode("utf-8") + b"\n"
+                for item in friction_lines
+            )
+            claude_trace.write_bytes(friction_segment)
+            friction_meta = claude_trace.stat()
+            friction_record = {
+                **claude_record,
+                "trace_identity": {"device": friction_meta.st_dev, "inode": friction_meta.st_ino},
+                "segment_end": len(friction_segment), "segment_size": len(friction_segment),
+                "segment_sha256": hashlib.sha256(friction_segment).hexdigest(),
+                "prompt_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+            }
+            friction_snapshot = read_segment(
+                friction_record, {"roots": {"trace_claude": str(trace_root)}},
+            )
+            assert [item["kind"] for item in friction_snapshot["signals"]] == expected_kinds, content[:40]
         manifest = {
             "policy_sha256": "c" * 64, "delegation_id": "test",
             "scanner_sha256": "d" * 64, "selector_sha256": "e" * 64,

@@ -1,0 +1,69 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_figma_figma__whoami",
+      "mcp__plugin_figma_figma__get_metadata",
+      "mcp__plugin_figma_figma__get_variable_defs",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_console_messages"
+    ]
+  },
+  "disabledMcpjsonServers": [
+    "supabase"
+  ],
+  "worktree": {
+    "bgIsolation": "none"
+  },
+  "skillOverrides": {
+    "claude-obsidian:save": "off",
+    "claude-obsidian:wiki-ingest": "off",
+    "claude-obsidian:wiki-query": "off",
+    "design-taste-frontend": "name-only",
+    "high-end-visual-design": "name-only",
+    "redesign-existing-projects": "name-only",
+    "motion-design": "name-only",
+    "ux-researcher-designer": "name-only",
+    "atlassian-admin": "name-only",
+    "hyperframes-animation": "name-only",
+    "hyperframes-audio": "name-only",
+    "hyperframes-cli": "name-only",
+    "hyperframes-core": "name-only",
+    "hyperframes-creative": "name-only",
+    "hyperframes-keyframes": "name-only",
+    "hyperframes-registry": "name-only",
+    "hyperframes-studio": "name-only",
+    "media-use": "name-only",
+    "higgsfield-product-photoshoot": "name-only",
+    "higgsfield-marketplace-cards": "name-only",
+    "higgsfield-soul-id": "name-only",
+    "higgsfield-websites": "name-only",
+    "higgsfield-game-generation": "name-only",
+    "higgsfield-video-explainer": "name-only",
+    "higgsfield-generate": "name-only"
+  },
+  "env": {
+    "SECURITY_GUIDANCE_DISABLE": "1"
+  },
+  "enabledPlugins": {
+    "vercel@claude-plugins-official": false,
+    "security-guidance@claude-plugins-official": false
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f wiki/hot.md ] && cat wiki/hot.md || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

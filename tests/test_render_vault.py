@@ -34,6 +34,17 @@ class RenderVaultTest(unittest.TestCase):
             self.assertEqual(len(rendered["reflection_policy_sha256"]), 64)
             self.assertFalse((target / "CLAUDE.template.md").exists())
             self.assertTrue((target / "CLAUDE.md").exists())
+            local = target / ".claude" / "settings.local.json"
+            self.assertFalse((target / ".claude" / "settings.local.template.json").exists())
+            local_settings = json.loads(local.read_text())
+            self.assertEqual(local_settings["skillOverrides"]["higgsfield-generate"], "name-only")
+            self.assertNotIn("_comment", local_settings)
+            for name in ("higgsfield-generate", "higgsfield-soul-id", "higgsfield-websites"):
+                self.assertTrue((target / ".agents" / "skills" / name / "SKILL.md").is_file())
+                self.assertTrue((target / ".agents" / "skills" / name / "LICENSE").is_file())
+                self.assertTrue((target / ".claude" / "skills" / name / "SKILL.md").is_file())
+            self.assertTrue(json.loads((target / ".obsidian" / "plugins" / "dataview" / "data.json")
+                                       .read_text())["enableDataviewJs"])
 
             for path in target.rglob("*"):
                 if path.is_file():

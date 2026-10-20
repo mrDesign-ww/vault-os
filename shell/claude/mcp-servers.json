@@ -1,0 +1,16 @@
+{
+  "_comment": "MCP servers the system expects. Plugin servers (figma, playwright, chrome-devtools) arrive with their plugins in settings.template.json and need no step here. The user-scope servers below are offered by installer/install-claude-layer.py --mcp NAME (or --mcp all): it runs `claude mcp add --scope user` with the URL only. Every one signs in with the teammate's own account through OAuth on first use; no token is ever written by the installer.",
+  "plugin_servers": [
+    {"name": "figma", "plugin": "figma@claude-plugins-official", "url": "https://mcp.figma.com/mcp", "use": "read and write Figma files (figma-craft, design agents)"},
+    {"name": "playwright", "plugin": "playwright@claude-plugins-official", "use": "browser captures and checks at 390 and 320"},
+    {"name": "chrome-devtools", "plugin": "chrome-devtools-mcp@claude-plugins-official", "use": "browser debugging, performance, accessibility"}
+  ],
+  "servers": [
+    {"name": "magnific", "transport": "http", "url": "https://mcp.magnific.com", "default": true,
+     "use": "image, video and audio generation (nano-banana-pro routes through imagen-nano-banana-2 here)"},
+    {"name": "replicate", "transport": "sse", "url": "https://mcp.replicate.com/sse", "default": true,
+     "use": "model runs on Replicate"},
+    {"name": "higgsfield", "transport": "http", "url": "https://mcp.higgsfield.ai/mcp", "default": false,
+     "use": "Higgsfield generation for the vault higgsfield-* skills; the owner adds it per project, so it is opt-in"}
+  ]
+}

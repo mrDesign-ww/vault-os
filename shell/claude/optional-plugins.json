@@ -1,0 +1,6 @@
+{
+  "_comment": "Plugins that ship disabled. Each entry in \"plugins\" ships DISABLED through every install route: Claude gets enabledPlugins false plus the marketplace in extraKnownMarketplaces; Codex gets the marketplace and the plugin with enabled = false. Adding one is one line: {\"plugin\": \"NAME@MARKETPLACE\", \"marketplace\": \"MARKETPLACE\", \"github\": \"OWNER/REPO\"}. No plugin content is copied; Claude and Codex fetch it from its public marketplace only when the user enables it.",
+  "plugins": [
+    {"plugin": "i-have-adhd@i-have-adhd", "marketplace": "i-have-adhd", "github": "ayghri/i-have-adhd"}
+  ]
+}

@@ -21,6 +21,8 @@ related:
 
 Community-плагины этого vault. Работают **внутри Obsidian** (не в Claude, это другое — см. [[Claude Commands]]).
 
+По умолчанию `.obsidian/community-plugins.json` включает четыре плагина: Advanced Canvas, Dataview, Editing Toolbar и Homepage. Остальные плагины ниже необязательны: поставь их через Settings → Community plugins, если они нужны.
+
 - **Вызвать команду:** `Cmd + P` → имя команды.
 - **Все команды плагина:** `Cmd + P` → имя плагина (увидишь полный список).
 - **Настройки:** Settings → Community plugins → шестерёнка у плагина. Горячие клавиши: Settings → Hotkeys → фильтр по имени.

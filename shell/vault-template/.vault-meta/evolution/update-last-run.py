@@ -314,6 +314,31 @@ def self_test():
             pass
         else:
             raise AssertionError("invalid reflection evidence accepted: %r" % (values,))
+    # A run records exactly its own phases: optional ones left by an older run
+    # (reflection, adversarial_gate) must not carry over and look unfinished.
+    with tempfile.TemporaryDirectory() as scratch:
+        output = os.path.join(scratch, "last-run.json")
+        with open(output, "w", encoding="utf-8") as handle:
+            json.dump({"platforms": {"claude": {"last_run": "2026-08-19", "phases": {
+                "reflection": "ready-autonomous-no-eligible-traces",
+                "adversarial_gate": "2026-08-19",
+            }}}}, handle)
+        saved = HERE, check_lock, sys.argv
+        globals().update(HERE=scratch, check_lock=lambda token: None)
+        sys.argv = [
+            "update-last-run.py", "--platform", "claude", "--date", "2026-08-20",
+            "--lock-token", "a" * 64, "--notes", "self-test", "--output", output,
+        ] + ["--phase=%s=pending" % name for name in REQUIRED_PHASES]
+        try:
+            main()
+        finally:
+            globals().update(HERE=saved[0], check_lock=saved[1])
+            sys.argv = saved[2]
+        with open(output, encoding="utf-8") as handle:
+            written = json.load(handle)
+        assert written["platforms"]["claude"]["phases"] == dict.fromkeys(
+            REQUIRED_PHASES, "pending",
+        ), written
     print("update-last-run self-test: PASS")
 
 
@@ -386,14 +411,12 @@ def main():
         platform_state = platforms.setdefault(args.platform, {})
         prior_run = platform_state.get("last_run")
         validate_run_order(prior_run, requested_date)
-        prior_phases = platform_state.get("phases", {})
-        if not isinstance(prior_phases, dict):
-            raise ValueError("existing platform phases are not a JSON object")
-        prior_phases.update(phases)
+        # Exactly this run's phases: an optional phase from an older run (reflection,
+        # adversarial_gate) would otherwise stay stale and read as unfinished forever.
         platform_state.update({
             "state_schema_version": 4,
             "last_run": args.date,
-            "phases": prior_phases,
+            "phases": phases,
             "notes": args.notes,
         })
         if evidence is None:
@@ -413,7 +436,7 @@ def main():
         payload.update({
             "state_schema_version": 4,
             "last_run": args.date,
-            "phases": prior_phases,
+            "phases": phases,
             "notes": args.notes,
         })
         if evidence is None:

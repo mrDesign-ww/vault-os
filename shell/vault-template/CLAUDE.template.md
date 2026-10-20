@@ -23,7 +23,7 @@ Internal engine state stays separate: Claude memory and session traces belong to
 
 Codex often handles design/product thinking, hypotheses, UX critique, task shaping, and handoff documentation. When Codex saves useful work into normal active-zone project pages, resources, indexes, logs, or hot cache, treat those pages as regular vault knowledge.
 
-Do not read `wiki/agent-memory/` as project context unless owner explicitly asks. That folder is legacy Codex process memory only. Project decisions that matter for implementation, Figma, review, or future planning should live in normal project or resource pages.
+Do not read `wiki/agent-memory/` as project context unless the owner explicitly asks. That folder is legacy Codex process memory only. Project decisions that matter for implementation, Figma, review, or future planning should live in normal project or resource pages.
 
 ## Structure (PARA)
 
@@ -83,9 +83,7 @@ The vault has three isolated zones. They never mix: pages in one zone do not lin
 - To Client: "перейди в область Client" / "switch to Client" (or "режим Client"). Root `wiki/client/`.
 - Back to work: "вернись в рабочую" / "switch to work". A new session also resets to work.
 
-The always-loaded `UserPromptSubmit` hook records these exact route directives in a policy-independent session ledger before the request is processed. Lifecycle state and ledger use a recoverable write-ahead transaction. An interrupted registration is recovered because the human turn exists; an interrupted switch is rolled back before an unrelated prompt. The ledger supplies the initial zone of every later turn, including after a reflection-policy update. Before a new prompt or Stop, exact duplicate lifecycle records across policy generations are reduced to one; conflicting variants fail before publication. A new completion receipt preserves original registration authority and current closing authority. Once its exact bytes are durably prepared, retry or policy rollover publishes those same bytes in their original completion generation. A session route matching a one-off target still promotes the transition and updates the durable ledger. A zone switch resolves the uniquely open turn across policy generations before changing the shared ledger, so a mid-turn policy update cannot bypass zone exclusion. If any lifecycle event cannot be recorded, the configured hook preserves the nonzero status so the turn is retried instead of silently lost. Operational I/O or publication errors remain retryable; only deterministic segment ambiguity may retire a state. The `Stop` hook excludes every switched turn from work reflection. If `Stop` misses its lock, the next prompt closes the prior exact one-prompt segment. Tool-result user envelopes remain inside the exact segment hash but are not counted as a second human prompt.
-
-**One-off override (optional).** A message starting with `личное:` or `client:` is automatically marked by the same prompt hook as non-work before it is processed. It routes only that request and does not change the session's active zone.
+**One-off override (optional).** A message starting with `личное:` or `client:` routes only that request to the personal or {{CLIENT_LABEL}} zone and does not change the session's active zone.
 
 **Isolation rule.** Do not cross-link or co-list zones. When a zone is active, ignore the other zones' folders. The only allowed cross-reference is a single navigation link between zone indexes.
 
@@ -95,7 +93,6 @@ The always-loaded `UserPromptSubmit` hook records these exact route directives i
 - Add `memory_level: l0|l1|l2|l3` to every new or substantively updated durable note. Explicit L1 requires `memory_provenance`; explicit L2 gets canonical trust only with `memory_provenance`.
 - Wikilinks use `[[Note Name]]`; filenames are unique, no paths needed.
 - `wiki/index.md` is the master catalog: update on every new page.
-- Narrow reflection exception: the autonomous reflection checkpoint contains only exact provenance-bound outcome pages and must remain exact HEAD until immutable disposition finalization. A path that is approved L3 or was L3 in the parent commit is forbidden even if the proposed post-state says L1 or L2. Shared `index`, `log`, `hot`, `overview` and project `_index.md` are excluded from that checkpoint and are refreshed only in a later normal owner-scoped cycle. The generated memory index may be rebuilt for retrieval acceptance but is not checkpointed. Its small exact authority receipt is checkpointed during the later normal owner-scoped cycle.
 - `wiki/log.md` is append-only: newest entry at the TOP, never edit past entries.
 - `wiki/hot.md` is overwritten completely after every significant operation; keep it under ~500 words.
 - Source documents copied into a project's `sources/` folder are immutable reference: synthesize on top, never rewrite them.
@@ -107,15 +104,13 @@ Vault-local skills under `.claude/skills/` override generic plugin workflows for
 
 PARA determines location. L0-L3 determines trust: evidence folders are always L0; verified facts are L1; canonical project state and workflows are L2; stable policy is L3 only with hardcoded exact owner, ISO approval date, matching page hash in `.vault-meta/memory-approvals.json` and matching code anchor for that manifest. This is a cooperative human-reviewed boundary. Legacy inferred L1/L2 is discovery material, not verified truth.
 
-A signal-bearing reflection scan remains pending until a strictly validated immutable disposition finalization marker is published last under the same work lock. A later selector run in the same policy generation resumes that exact unfinished manifest instead of creating a second outcome cycle. Before any current-generation selection, pinned predecessor scan catalogs are checked against the global processed ledger. An unfinished predecessor cycle fails closed with its exact policy and scan identity, so policy rollout must drain it and can never reselect the same completion. Selector, `verify`, last-run and health use the same strict structural disposition contract and reject a body without that marker. A zero-signal scan may close its manifest directly. After an outcome-only checkpoint, reflection acceptance may use the exact active work-lock token to validate and replay the local uncheckpointed index authority. Public retrieval still refuses active writers and requires the authority committed at HEAD. The authority is committed only in the later ordinary metadata checkpoint after finalization.
-
 All operations act on the ACTIVE zone (work by default; personal or Client after a session switch). The paths below are the work-zone defaults; in personal mode substitute the `wiki/personal/` equivalents, in Client mode the `wiki/client/` equivalents.
 
 - **Ingest**: preserve the raw source as immutable L0. Use project `sources/`, work `wiki/resources/incoming/`, or the personal/Client zone `inbox`. Create verified synthesis as a separate L1 or L2 page.
-- **Query**: use `/usr/bin/python3 scripts/memory-model.py retrieve "QUERY" --zone ZONE --loadout ROLE`, with `--project` for project-scoped roles. A stale index or changed loadout policy fails closed and must be rebuilt before answering from it.
-- **Candidate memory**: automatically inferred or uncertain claims go to the active zone's `memory-candidates/` inbox as L0 through `scripts/memory-candidates.py`. Proposal is not complete when the file is created: under the same owner token update the candidate catalog, zone log and hot cache, rebuild and validate, create a scoped local checkpoint, release, then run a post-release list or retrieval check. Candidates remain excluded until evidence review and a separate approved L1 or L2 page. Explicit user decisions may be materialized directly with provenance.
+- **Query**: use `/usr/bin/python3 scripts/memory-model.py retrieve "QUERY" --zone ZONE --loadout ROLE`, with `--project` for project-scoped roles. A stale index or changed loadout policy fails closed and must be rebuilt before answering from it. Add `--brief` for a compact text view (level, trust, path, title, short snippet, about 6x smaller). Keep the default JSON when receipts, budgets or hashes matter (`/save` acceptance, evolution).
 - **Save**: `/save` uses `.claude/skills/save/SKILL.md`. Work inbox is `wiki/workspace/projects/inbox/`. The skill owns the shared zone lock through the scoped checkpoint, releases it on every path, then runs the live retrieval acceptance query.
 - **Lint**: "lint the wiki" runs a health check (orphans, dead links, stale claims) on the active zone.
+- **Evolution**: `/evolution` runs only on the owner's word (memory curator, wiki hygiene, retrieval refresh). Its playbook and the lifecycle internals (trace receipts, zone ledger, reflection) live in `.vault-meta/evolution/EVOLUTION.md`. Reflection is off by default and the Claude trace hooks are not registered in `.claude/settings.json`; turning phase 4 of that playbook on later means adding them back first.
 
 ## External accounts
 

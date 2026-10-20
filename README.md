@@ -18,17 +18,15 @@ Vault OS turns a local Obsidian vault into durable, trust-aware memory for AI wo
 
 ## What changed in the current release
 
-- A fail-closed, zone-scoped L0-L3 memory resolver with role-based context budgets.
-- Git-checkpointed index authority, page-hash snapshots, and shared zone write locks.
-- Candidate memory that keeps unverified inferences out of canonical retrieval.
-- Crash-safe Claude and Codex turn lifecycle tracking.
-- Work-only autonomous reflection with immutable evidence, selection, disposition, and processed receipts.
-- Exact owner approval and SHA-256 binding for L3 doctrine. Reflection can never approve L3.
-- 157 bundled skills and 30 optional Claude plugin entries.
-- A deterministic, standard-library installer that refuses non-empty targets and renders all owner and machine-specific identities locally.
-- A lifecycle hook that degrades loudly instead of discarding the turn, plus `reseal-policy.py` to repair the trust-hash chain after an approved edit.
-- Harness-written transcript envelopes are no longer counted as human prompts, so a failed `Stop` can no longer reproduce itself in the next segment.
-- Codex parity for the bundled design hook and a documented path for mirroring skills into `~/.codex/skills` and `~/.agents/skills`.
+- A global Claude layer, installed by `installer/install-claude-layer.py` on macOS, Linux and Windows: 10 agent types in three model tiers, global rules, an orchestration doc for main sessions, spec and design-round templates, hooks, and a status line.
+- Hooks that guard unattended work: no process kills by pattern and no `rm` with globs, a pause at 98% of the weekly usage limit, a compaction snapshot, and big-image downscaling for build agents (macOS).
+- A design layer for product UI/UX and frontend: `skill-router` (at most 3 skills per job), `figma-craft` with read-only Figma gate scripts, a `product-designer` agent, and design-spec and design-round templates.
+- 74 bundled skills with a source, licence and copyright table and a licence file in each folder; gstack and Remotion are installed from their upstream at a pinned commit (`--upstream-skills`). With Codex, `~/.codex/skills` and `~/.agents/skills` get exactly the owner's live sets: 97 and 152 bundled skill folders (the Claude skills his folders hold, `vault-os-update` and the host-only skills), plus gstack's own Codex setup and the Remotion copy from upstream.
+- A lighter vault runtime: `retrieve --brief`, light Russian stemming in retrieval, semantics-first retrieval evals, a faster health check, and reflection off by default (evolution runs only on the owner's word).
+- The installer never overwrites user files: it skips them, or backs them up with `--backup`, and only adds missing settings.
+- Clean install and full upgrade: `installer/vault-os.py` and the `vault-os-update` skill make a machine match this release exactly. An older or foreign setup is replaced (its extra skills, hooks, agents and settings keys go to a timestamped backup archive), personal files are kept, vault notes are moved into this structure with their links rewritten, never deleted, and the whole upgrade rolls back from the archive: `rollback` first shows a preview of what it restores, keeps and moves aside, and changes something only with `--confirm` and the preview's id after the person's yes; notes and commits made after the upgrade stay. A SessionStart check reports a newer release once a day. Details: [`installer/UPGRADE.md`](installer/UPGRADE.md).
+
+Earlier releases added the fail-closed L0-L3 resolver with role budgets, Git-checkpointed index authority, zone write locks, candidate memory, exact owner approval of L3 doctrine, and `reseal-policy.py`.
 
 ## Install
 
@@ -38,7 +36,7 @@ Open Claude Code and say:
 Install https://github.com/mrDesign-ww/vault-os
 ```
 
-Claude follows [`INSTALL.md`](INSTALL.md), asks a short trust and setup quiz, then creates a new private vault. The full hardened runtime currently supports macOS and Linux. Windows users can run it through WSL.
+Claude follows [`INSTALL.md`](INSTALL.md), asks a short trust and setup quiz, then creates a new private vault. On a machine that already has a Claude setup or an older Vault OS, say `Update Vault OS from https://github.com/mrDesign-ww/vault-os`: Claude shows the full upgrade plan first and changes nothing without a yes. The full hardened runtime currently supports macOS and Linux. Windows users can run it through WSL.
 
 For a direct test render:
 
@@ -61,9 +59,10 @@ The approval flag must only be used after the owner explicitly approves the bund
 | Memory | L0 evidence, L1 verified facts, L2 canonical scenarios, owner-approved L3 policy |
 | Retrieval | Separate local index per zone, role loadouts, strict provenance and freshness checks |
 | Integrity | Shared locks, local Git checkpoints, content hashes, authority receipts, fail-closed validation |
-| Evolution | Curator, wiki hygiene, retrieval refresh, adversarial verification, guarded reflection |
-| Agents | Vault-local Claude and Codex contracts, lifecycle hooks, evolution skills |
-| Tooling | 157 bundled skills, 30 optional Claude plugin entries, optional Codex and ECC setup |
+| Evolution | Owner-triggered curator, wiki hygiene, retrieval refresh, adversarial verification; reflection off by default |
+| Agents | 10 global agent types (Haiku, Sonnet, Opus tiers), vault-local Claude and Codex contracts, evolution skills |
+| Guards | Global hooks: dangerous-command guard, weekly-limit pause, compaction snapshot, orchestration doc, image-size gate (macOS) |
+| Tooling | 74 bundled skills (97 for Codex, 152 for `~/.agents`) plus pinned upstream skills, 33 Claude plugin entries (9 on, 24 off), optional MCP servers, Codex and ECC setup |
 
 ## Privacy boundary
 
@@ -73,6 +72,7 @@ The approval flag must only be used after the owner explicitly approves the bund
 - Personal and client zones are never eligible for work reflection.
 - Authentication files, local MCP configuration, hook trust hashes, and existing user settings are never shipped.
 - Optional third-party plugins and connected services have their own network and privacy policies. Vault OS itself does not upload vault contents.
+- Bundled hyperframes/media-use skills send anonymous usage telemetry to HeyGen; opt out with `HYPERFRAMES_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`.
 
 ## Repository layout
 
@@ -81,14 +81,25 @@ vault-os/
 ├── INSTALL.md
 ├── installer/
 │   ├── render-vault.py
+│   ├── install-claude-layer.py
+│   ├── vault-os.py         # detect, upgrade, parity, rollback, recover (UPGRADE.md)
+│   ├── vaultos/
+│   ├── install-mac.sh
+│   ├── install-windows.ps1
 │   ├── quiz.md
 │   └── steps.md
 ├── shell/
-│   ├── claude/             # global settings template and 157 skills
-│   ├── codex/              # public plugin and hook templates
+│   ├── claude/             # agents, hooks, docs, templates, status line, settings template, 74 skills
+│   ├── codex/              # public plugin and hook templates, 92 Codex and ~/.agents skills
 │   └── vault-template/     # empty vault, memory engine, hooks, and evolution runtime
 ├── tests/
-│   └── test_render_vault.py
+│   ├── test_render_vault.py
+│   ├── test_install_claude_layer.py
+│   ├── test_install_parity_steps.py
+│   ├── test_upgrade.py
+│   ├── test_vault_migration.py
+│   ├── test_vault_os_check.py
+│   └── test_claude_hooks.py
 └── site/
 ```
 
@@ -98,8 +109,8 @@ vault-os/
 python3 -m unittest discover -s tests -v
 ```
 
-The test renders a clean vault, validates the policy chain, initializes local Git, builds and validates all three indexes under locks, commits authority receipts, and performs a live retrieval query.
+The tests run every hook self-test, install the Claude layer into temporary homes for each platform, and render a clean vault that is checked end to end: policy chain, local Git, all three indexes under locks, authority receipts, and a live retrieval query. The upgrade tests install the previous public release with a foreign vault into a temporary home, upgrade it to parity 0, roll it back to the exact previous tree, kill the upgrade at every phase and recover it.
 
 ## License
 
-[MIT](LICENSE) © 2026 Vladyslav Chumak
+[MIT](LICENSE) © 2026 mrDesign-ww. Bundled third-party skills keep their own licences, see [`shell/claude/skills/THIRD-PARTY-SKILLS.md`](shell/claude/skills/THIRD-PARTY-SKILLS.md).

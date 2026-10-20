@@ -6,6 +6,18 @@
 
 The renderer uses only the Python standard library. It refuses non-empty targets and requires the explicit `--approve-memory-policy` flag.
 
+## Global Claude layer
+
+`installer/install-claude-layer.py` copies agents, hooks, docs, templates, the status line, scripts and skills into the Claude home, renders `CLAUDE.md` from `shell/claude/CLAUDE.template.md`, and merges `shell/claude/settings.template.json` plus the hooks from `shell/claude/hooks/hooks.json`. Hook entries carry a `platforms` list; macOS-only entries (`image-size-gate.py`, `keep-awake.sh`, the `afplay` sound) are never written on Linux or Windows, and POSIX shell scripts are not copied on Windows. Differing user files are skipped, or moved aside with `--backup`. It prints a JSON report.
+
+## Codex layer
+
+`installer/install-codex-layer.py --vault PATH` merges `shell/codex/config.template.toml` (missing top-level keys and tables only) and `shell/codex/hooks.template.json` (missing hook commands only, macOS-only ones on macOS) into `~/.codex`, after timestamped backups. `--mcp NAME` adds a URL-only MCP block from `shell/claude/mcp-servers.json`.
+
+## Clean install and full upgrade
+
+`installer/vault-os.py` replaces an existing system instead of adding to it: `detect`, a dry-run `upgrade` that prints the plan and its id, `upgrade --confirm PLAN_ID`, `parity`, `rollback ARCHIVE` and `recover`. It builds the desired state with the three installers above, archives everything it replaces or removes, moves vault notes into the structure, and must end with parity 0. The boundary between system and personal files, the archive and the migration rules: `installer/UPGRADE.md`.
+
 ## Global configuration merge
 
 Before changing either global file:
@@ -57,4 +69,4 @@ The supported repository check is:
 python3 -m unittest discover -s tests -v
 ```
 
-It renders a fresh vault, validates the reflection policy, initializes local Git, builds and validates all three memory indexes under zone locks, checkpoints the authority receipts, and performs a live retrieval acceptance query.
+It also runs every hook self-test and the Claude layer installer against temporary homes for macOS, Linux and Windows. The vault test renders a fresh vault, validates the reflection policy, initializes local Git, builds and validates all three memory indexes under zone locks, checkpoints the authority receipts, and performs a live retrieval acceptance query.

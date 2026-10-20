@@ -45,6 +45,17 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/scripts/keep-awake.sh\" start",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }
