@@ -36,9 +36,9 @@ The Mac daemon, the iPhone app and the decision board are in development. Until 
 > In development. The app and the board come to this repository when they are done. These are real screens of the current build, shot with made-up demo data.
 
 <p align="center">
-  <img src="docs/readme/app-answer.webp" width="264" alt="Answer in one tap. The recommended answer comes first: accept it or pick another. The app shows the question Show yearly prices by default? with three options and an Accept button.">
+  <img src="docs/readme/app-answer.webp" width="264" alt="Answer in one tap. Recommended answer first: accept it or pick another. The app shows the question Show yearly prices by default? with three options and an Accept button.">
   <img src="docs/readme/app-work.webp" width="264" alt="All work at a glance. Every task with its progress and what waits on you. The Work tab shows a pricing page task at 64 percent that needs you twice.">
-  <img src="docs/readme/app-task.webp" width="264" alt="One task, step by step. Its steps, its round and the result that needs your look. A progress dial reads 64 percent, 9 of 14 steps, above the latest result.">
+  <img src="docs/readme/app-task.webp" width="264" alt="One task, every step. Its steps, its round and the result that needs your look. A progress dial reads 64 percent, 9 of 14 steps, above the latest result.">
   <img src="docs/readme/app-steer.webp" width="264" alt="Mark what to change. Point at the spot on a result and the note goes to the agent. A pricing card design carries three numbered marks on the price, the button and the billing toggle.">
   <img src="docs/readme/app-receipt.webp" width="264" alt="Know it landed. Sent, picked up, applied: you see each step, and the agent's note at the end. A receipt lists Sent, On Mac, Picked up and Applied, with the agent's note.">
 </p>
@@ -96,7 +96,7 @@ python3 installer/render-vault.py \
   --approve-memory-policy
 ```
 
-Use the approval flag only after the owner explicitly approves the bundled L3 doctrine during installation.
+Use the approval flag only after the owner explicitly approves the bundled memory rules during installation.
 
 </details>
 
