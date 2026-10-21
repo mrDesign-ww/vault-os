@@ -528,7 +528,10 @@ homes:
   archive; a mixed file: the person's part kept); link targets untouched; parity 0; a no-op second plan; an exact
   forced rollback. Plus the phase order and the warning for a link whose folder target moves, and a sample of the
   matrix (the baseline, every 80th case, the two cases of CI run 39506112345) while the person's Git runs
-  housekeeping after every commit (`gc.auto=1` in the temporary `HOME`, two loose objects in the sampled shard);
-  fixture git commands carry the installer's no-housekeeping flags, so the harness is deterministic;
+  housekeeping after every commit (in the temporary `HOME`: `gc.auto=1` with two loose objects in the sampled
+  shard for the gc task of Git 2.50 to 2.53, `maintenance.geometric-repack.auto=-1` for the geometric repack of 2.54
+  and later). A control vault proves the trigger before the sample, and every sampled vault proves it again after its
+  checks (a commit of the person's writes `info/refs`). Fixture git commands carry the installer's no-housekeeping
+  flags, so the harness is deterministic;
 - the SessionStart check: no stamp, interrupted, current, outdated and cached, offline, subagent, off, bad input,
   and its wiring in `hooks.json` and the installer.

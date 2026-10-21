@@ -49,8 +49,11 @@ BASE = {  # Home.md sorts before wiki (SPOT-CHECK-2 MAJOR-1); the others land be
 OUTSIDE = {"target-file.txt": "outside file\n", "target-dir/inside.txt": "outside folder\n"}
 POSIX = not sys.platform.startswith("win")
 TOOL_DIRS = [p for p in engine.VAULT_TOOL_PATHS if "." not in posixpath.basename(p)]  # folders the vault tools write
-# The person's Git config in the temporary HOME: automatic housekeeping after every commit, in the foreground.
-HOUSEKEEPING = "[gc]\n\tauto = 1\n\tautoDetach = false\n[maintenance]\n\tauto = true\n\tautoDetach = false\n"
+# The person's Git config in the temporary HOME: automatic housekeeping after every commit, in the foreground. Git
+# 2.50 to 2.53 run the gc task (gc.auto=1: two loose objects in objects/17 pass); 2.54 and later run the geometric
+# repack, and 2.56 raised its threshold to 6700, so a negative auto value forces it on every run.
+HOUSEKEEPING = ("[gc]\n\tauto = 1\n\tautoDetach = false\n[maintenance]\n\tauto = true\n\tautoDetach = false\n"
+                "[maintenance \"geometric-repack\"]\n\tauto = -1\n")
 
 
 def changed_paths(before, after):
@@ -103,8 +106,8 @@ def make_shape(m, rel, shape, kind):
 
 def force_housekeeping(m):
     """Every later commit under m's HOME runs Git housekeeping: the config above, and two loose objects in objects/17,
-    the shard Git samples to estimate the loose objects (the auto conditions of gc and of the geometric repack both
-    pass at two). The objects are unreachable blobs; the snapshots exclude the object store."""
+    the shard Git samples to estimate the loose objects (gc.auto=1 passes at two). The objects are unreachable blobs;
+    the snapshots exclude the object store. housekeeping_runs(m) proves it for this Git and this vault."""
     (m.home / ".gitconfig").write_text(HOUSEKEEPING, encoding="utf-8")
     planted, i = 0, 0
     while planted < 2:
@@ -116,6 +119,19 @@ def force_housekeeping(m):
             if not out.stdout.startswith(b"17"):
                 raise AssertionError("the fixture vault does not use SHA-1 object names")
             planted += 1
+
+
+def housekeeping_runs(m):
+    """The person commits in m's vault under m's HOME: True when that commit's housekeeping wrote .git/info/refs with
+    the new HEAD (a repack runs update-server-info)."""
+    out = subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q",
+                          "--allow-empty", "-m", "mine"], cwd=str(m.vault), env=m.env(), capture_output=True,
+                         text=True)
+    if out.returncode:
+        raise AssertionError("the person's commit failed: " + out.stderr)
+    head = F.git("rev-parse", "HEAD", cwd=m.vault).stdout.strip()
+    refs = m.vault / ".git" / "info" / "refs"
+    return refs.is_file() and head in refs.read_text(encoding="utf-8")
 
 
 def machine(rel=None, shape="absent", kind="file", housekeeping=False):
@@ -218,7 +234,10 @@ class Matrix:
         m = machine(rel, shape, kind, housekeeping)
         problems = []
         try:
-            return self._run(m, rel, shape, kind, problems), problems
+            outcome = self._run(m, rel, shape, kind, problems)
+            if housekeeping and not housekeeping_runs(m):  # the same trigger fires in this vault, after the checks
+                problems.append("the forced housekeeping does not run in this vault")
+            return outcome, problems
         except Exception as error:  # noqa: BLE001 - one case's crash is that case's finding
             problems.append("crashed: %r" % error)
             return "crashed", problems
@@ -375,16 +394,13 @@ class PathShapeMatrixTest(unittest.TestCase):
 class HousekeepingTest(unittest.TestCase):
     """The installer starts no Git housekeeping (UPGRADE.md 5.3): with the person's Git set to run it after every
     commit, a sample of the matrix keeps every check, the exact rollback included. The sample holds the two cases of
-    CI run 39506112345, the baseline and every 80th case."""
+    CI run 39506112345, the baseline and every 80th case. A control vault proves the trigger first, and every sampled
+    vault proves it again after its checks."""
 
     def test_the_matrix_holds_while_git_would_run_housekeeping(self):
         control = machine(housekeeping=True)
-        try:  # the forced condition is real: the person's own commit runs housekeeping, which writes info/refs
-            out = subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q",
-                                  "--allow-empty", "-m", "mine"], cwd=str(control.vault), env=control.env(),
-                                 capture_output=True, text=True)
-            self.assertEqual(out.returncode, 0, out.stderr)
-            self.assertTrue((control.vault / ".git" / "info" / "refs").exists(),
+        try:
+            self.assertTrue(housekeeping_runs(control),
                             "the forced housekeeping no longer runs on this Git; the trigger needs an update")
         finally:
             control.cleanup()
