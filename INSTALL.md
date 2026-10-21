@@ -127,7 +127,7 @@ Rules the installer keeps:
 
 - A file or skill folder that already exists and differs is skipped, or with `--backup` moved to `<name>.backup-<timestamp>`. Identical files are left alone.
 - `~/.claude/settings.json` is backed up before any change. Only missing keys are added, and the maps (plugins, marketplaces, `skillOverrides`, `modelSettings`, `env`) entry by entry, plus the hooks; existing user values win. The template carries the owner's working defaults: `model: opus[1m]`, Opus effort `xhigh`, `autoCompactWindow: 300000`, the skill listing caps, `tui: fullscreen`, push notifications for agents, `ENABLE_CLAUDEAI_MCP_SERVERS: false`, and 106 `skillOverrides` that decide which skills are off, listed by name only, or reachable only when typed. Bypass permissions only with `--bypass-permissions`.
-- Plugins are marketplace dependencies, never vendored: the template turns on nine (chrome-devtools-mcp, design-council, figma, frontend-design, obsidian, playwright, security-guidance, superpowers, vercel) and lists 22 more as optional (`false`).
+- Plugins are marketplace dependencies, never vendored: the template turns on nine (chrome-devtools-mcp, design-council, figma, frontend-design, obsidian, playwright, security-guidance, superpowers, vercel) and lists 23 more as optional (`false`); `optional-plugins.json` adds one more, also off.
 - A second run changes nothing.
 
 The new vault already contains its local Claude lifecycle hooks in `.claude/settings.json`. Do not replace that file with the global settings template.
