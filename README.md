@@ -1,34 +1,76 @@
-<h1 align="center">🗄️ Vault OS</h1>
-
-<p align="center">
-  <em>A private, persistent Obsidian memory system for Claude Code and Codex.</em>
+<p>
+<picture>
+  <source media="(max-width: 600px)" srcset="docs/readme/hero-narrow.webp">
+  <img src="docs/readme/hero.webp" alt="Vault OS. Claude Code, run like a design studio. Three agent cards, Haiku with 3 agent types, Sonnet with 3 and Opus with 4, send a question to the Vault OS iPhone app.">
+</picture>
 </p>
 
-<p align="center">
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-1f1f1f.svg"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/full%20runtime-macOS%20%7C%20Linux-4b7bec.svg">
-  <img alt="For Claude Code, Codex, and Obsidian" src="https://img.shields.io/badge/for-Claude%20Code%20%2B%20Codex%20%2B%20Obsidian-6f56d9.svg">
-  <a href="https://mrdesign-ww.github.io/vault-os/"><img alt="Live walkthrough" src="https://img.shields.io/badge/walkthrough-live-2ecc71.svg"></a>
+**Vault OS** is a ready-made setup for Claude Code: a main session that plans and delegates, agents on the right model for each job, a private Obsidian vault for memory, and guards that keep long unattended work safe. It is made for people who design and build product UI with Claude Code every day.
+
+[Walkthrough site](https://mrdesign-ww.github.io/vault-os/) · [Install guide](INSTALL.md) · [Upgrade and rollback](installer/UPGRADE.md) · [Changelog](CHANGELOG.md)
+
+> [!NOTE]
+> This repository ships the system only: no projects, notes, session traces, accounts, tokens, private paths or client material.
+
+## How it works
+
+<p>
+<picture>
+  <source media="(max-width: 600px)" srcset="docs/readme/how-it-works-narrow.svg">
+  <img src="docs/readme/how-it-works.svg" alt="How a question reaches you. Claude Code, the Obsidian vault and the Mac daemon run on your Mac; the iPhone app is your phone. 1: an agent asks a question. 2: the Mac daemon sends it to the iPhone app. 3: your answer goes back through the daemon. 4: the waiting agent picks it up. The Mac daemon and the iPhone app are in development.">
+</picture>
 </p>
 
-Vault OS turns a local Obsidian vault into durable, trust-aware memory for AI work. PARA controls where knowledge lives. L0-L3 controls how evidence, facts, project state, and owner policy are trusted. Work, personal, and client zones remain isolated.
+You give the main Claude Code session a task. It splits the work and starts agents by tier: Haiku for chores and checks, Sonnet for builds from a spec, Opus for architecture, design and review. Each role reads a small, budgeted set of notes from the vault, so an agent starts with the context its job needs. When a choice is yours, the work waits for you. With the app, a question takes this path:
 
-> [!IMPORTANT]
-> This repository contains an empty, parameterized template. It includes no projects, notes, session traces, accounts, tokens, private paths, or client material.
+1. **Question.** The agent asks you a question: the options, its recommendation and room for your answer.
+2. **To your phone.** The Mac daemon sends the question to the iPhone app.
+3. **Your answer.** You tap an option or record a voice note, and the answer goes back to the agent.
+4. **Agent picks it up.** The waiting agent goes on, then reports what it applied in a one-line note.
 
-## What changed in the current release
+The Mac daemon, the iPhone app and the decision board are in development. Until they ship, questions come to you in the chat, or in the decision channel you set up for a project.
 
-- A global Claude layer, installed by `installer/install-claude-layer.py` on macOS, Linux and Windows: 10 agent types in three model tiers, global rules, an orchestration doc for main sessions, spec and design-round templates, hooks, and a status line.
-- Hooks that guard unattended work: no process kills by pattern and no `rm` with globs, a pause at 98% of the weekly usage limit, a compaction snapshot, and big-image downscaling for build agents (macOS).
-- A design layer for product UI/UX and frontend: `skill-router` (at most 3 skills per job), `figma-craft` with read-only Figma gate scripts, a `product-designer` agent, and design-spec and design-round templates.
-- 74 bundled skills with a source, licence and copyright table and a licence file in each folder; gstack and Remotion are installed from their upstream at a pinned commit (`--upstream-skills`). With Codex, `~/.codex/skills` and `~/.agents/skills` get exactly the owner's live sets: 97 and 152 bundled skill folders (the Claude skills his folders hold, `vault-os-update` and the host-only skills), plus gstack's own Codex setup and the Remotion copy from upstream.
-- A lighter vault runtime: `retrieve --brief`, light Russian stemming in retrieval, semantics-first retrieval evals, a faster health check, and reflection off by default (evolution runs only on the owner's word).
-- The installer never overwrites user files: it skips them, or backs them up with `--backup`, and only adds missing settings.
-- Clean install and full upgrade: `installer/vault-os.py` and the `vault-os-update` skill make a machine match this release exactly. An older or foreign setup is replaced (its extra skills, hooks, agents and settings keys go to a timestamped backup archive), personal files are kept, vault notes are moved into this structure with their links rewritten, never deleted, and the whole upgrade rolls back from the archive: `rollback` first shows a preview of what it restores, keeps and moves aside, and changes something only with `--confirm` and the preview's id after the person's yes; notes and commits made after the upgrade stay. A SessionStart check reports a newer release once a day. Details: [`installer/UPGRADE.md`](installer/UPGRADE.md).
+## The iPhone app
 
-Earlier releases added the fail-closed L0-L3 resolver with role budgets, Git-checkpointed index authority, zone write locks, candidate memory, exact owner approval of L3 doctrine, and `reseal-policy.py`.
+> [!NOTE]
+> In development. The app and the board come to this repository when they are done. These are real screens of the current build, shot with made-up demo data.
+
+<p align="center">
+  <img src="docs/readme/app-answer.webp" width="264" alt="Answer in one tap. Recommended answer first: accept it or pick another. The app shows the question Show yearly prices by default? with three options and an Accept button.">
+  <img src="docs/readme/app-work.webp" width="264" alt="All work at a glance. Every task with its progress and what waits on you. The Work tab shows a pricing page task at 64 percent that needs you twice.">
+  <img src="docs/readme/app-task.webp" width="264" alt="One task, every step. Its steps, its round and the result that needs your look. A progress dial reads 64 percent, 9 of 14 steps, above the latest result.">
+  <img src="docs/readme/app-steer.webp" width="264" alt="Mark what to change. Point at the spot on a result and the note goes to the agent. A pricing card design carries three numbered marks on the price, the button and the billing toggle.">
+  <img src="docs/readme/app-receipt.webp" width="264" alt="Know it landed. Sent, picked up, applied: you see each step, and the agent's note at the end. A receipt lists Sent, On Mac, Picked up and Applied, with the agent's note.">
+</p>
+
+Also in the works: a push for each new question, and several questions from one task shown as one stack.
+
+## What's inside
+
+| Part | What you get |
+| --- | --- |
+| Agents | 10 agent types in three model tiers. Haiku: `runner`, `checker`, `locator`. Sonnet: `builder`, `worker`, `look-reviewer`. Opus: `architect`, `reviewer`, `product-designer`, `general-purpose`. |
+| Rules | Global rules plus an orchestration doc for main sessions: one fresh agent per task, briefs with at most 3 required documents, at most two fix rounds on a part before the method changes. |
+| Memory | An empty, private Obsidian vault: PARA folders, work, personal and client zones kept apart, four trust levels, from raw evidence to rules you approved, and a local index per zone that refuses to answer when it is stale. |
+| Guards | Hooks for unattended work: no process kills by pattern and no `rm` with globs, a pause at 98% of the weekly usage limit, a snapshot before compaction, big-image downscaling for build agents (macOS), and a daily check for a newer release. |
+| Design layer | `skill-router` (1 to 3 skills per job), `figma-craft` with read-only Figma gate scripts, the `product-designer` agent, and design-spec and design-round templates. |
+| Skills | 74 bundled skills, each with its source and licence, and 33 plugin entries after install (9 on, the rest off until you turn them on). gstack and Remotion come from their upstream at a pinned commit with `--upstream-skills`. |
+| Codex | Optional: the vault ships a Codex contract, and the installer adds hooks, plugins and skills to Codex. |
+
+## Safe to install, safe to upgrade
+
+- **Plan first.** The upgrade shows its full plan and changes nothing without your yes.
+- **Your files stay yours.** Notes, attachments, memory, sessions and credentials are never deleted. An upgrade may move notes into the vault structure and rewrite their links; credentials and sessions are never touched.
+- **Everything removed is archived.** System folders end up matching the release exactly. Whatever the upgrade removes or overwrites there, your own skills in `~/.claude/skills` included, is first copied to `~/vault-os-backups/<time>/`, and nothing deletes that archive.
+- **Rollback.** `rollback` first shows what it will restore, keep and move aside, and runs only with `--confirm` and that preview's id. Right after an upgrade it returns the exact previous tree; notes and commits you made since then stay.
+- **Crash safe.** `recover` rolls back an upgrade that was killed halfway.
+- **Your permission mode.** Bypass mode is turned on only when you choose it in the setup quiz.
+
+Details: [`installer/UPGRADE.md`](installer/UPGRADE.md).
 
 ## Install
+
+You need Git, Python 3, Node.js, Claude Code and Obsidian. The full system runs on macOS and Linux, and on Windows through WSL. The Claude layer alone also installs natively on Windows.
 
 Open Claude Code and say:
 
@@ -36,9 +78,14 @@ Open Claude Code and say:
 Install https://github.com/mrDesign-ww/vault-os
 ```
 
-Claude follows [`INSTALL.md`](INSTALL.md), asks a short trust and setup quiz, then creates a new private vault. On a machine that already has a Claude setup or an older Vault OS, say `Update Vault OS from https://github.com/mrDesign-ww/vault-os`: Claude shows the full upgrade plan first and changes nothing without a yes. The full hardened runtime currently supports macOS and Linux. Windows users can run it through WSL.
+Claude follows [`INSTALL.md`](INSTALL.md): it asks a short trust and setup quiz, then creates a new private vault and installs the Claude layer. On a machine that already has a Claude setup or an older Vault OS, say:
 
-For a direct test render:
+```text
+Update Vault OS from https://github.com/mrDesign-ww/vault-os
+```
+
+<details>
+<summary>Render a vault by hand</summary>
 
 ```bash
 python3 installer/render-vault.py \
@@ -49,36 +96,30 @@ python3 installer/render-vault.py \
   --approve-memory-policy
 ```
 
-The approval flag must only be used after the owner explicitly approves the bundled L3 doctrine during installation.
+Use the approval flag only after the owner explicitly approves the bundled memory rules during installation.
 
-## System layers
+</details>
 
-| Layer | Included |
-| --- | --- |
-| Vault | Empty PARA scaffold with work, personal, and client zones |
-| Memory | L0 evidence, L1 verified facts, L2 canonical scenarios, owner-approved L3 policy |
-| Retrieval | Separate local index per zone, role loadouts, strict provenance and freshness checks |
-| Integrity | Shared locks, local Git checkpoints, content hashes, authority receipts, fail-closed validation |
-| Evolution | Owner-triggered curator, wiki hygiene, retrieval refresh, adversarial verification; reflection off by default |
-| Agents | 10 global agent types (Haiku, Sonnet, Opus tiers), vault-local Claude and Codex contracts, evolution skills |
-| Guards | Global hooks: dangerous-command guard, weekly-limit pause, compaction snapshot, orchestration doc, image-size gate (macOS) |
-| Tooling | 74 bundled skills (97 for Codex, 152 for `~/.agents`) plus pinned upstream skills, 33 Claude plugin entries (9 on, 24 off), optional MCP servers, Codex and ECC setup |
+## What's new
+
+**2026.10.20.** The global Claude layer (10 agent types, rules, an orchestration doc, hooks and a status line), the design layer, 74 bundled skills, and a clean install and full upgrade with rollback. All notes are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Privacy boundary
 
-- Obsidian files remain the source of truth on the user's machine.
+- Obsidian files stay the source of truth on your machine.
 - Generated retrieval indexes and session traces stay local and are ignored by Git.
-- Small index authority receipts are committed locally so retrieval can detect stale or unreviewed state.
-- Personal and client zones are never eligible for work reflection.
-- Authentication files, local MCP configuration, hook trust hashes, and existing user settings are never shipped.
+- Small receipts for each index are committed locally, so retrieval can tell when an index is stale or was never reviewed.
+- Personal and client zones are kept out of the optional memory review, which is off by default.
+- Authentication files, local MCP configuration, hook trust hashes and existing user settings are never shipped.
 - Optional third-party plugins and connected services have their own network and privacy policies. Vault OS itself does not upload vault contents.
-- Bundled hyperframes/media-use skills send anonymous usage telemetry to HeyGen; opt out with `HYPERFRAMES_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`.
+- Bundled hyperframes and media-use skills send anonymous usage telemetry to HeyGen; opt out with `HYPERFRAMES_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`.
 
 ## Repository layout
 
 ```text
 vault-os/
 ├── INSTALL.md
+├── CHANGELOG.md
 ├── installer/
 │   ├── render-vault.py
 │   ├── install-claude-layer.py
@@ -92,15 +133,10 @@ vault-os/
 │   ├── claude/             # agents, hooks, docs, templates, status line, settings template, 74 skills
 │   ├── codex/              # public plugin and hook templates, 92 Codex and ~/.agents skills
 │   └── vault-template/     # empty vault, memory engine, hooks, and evolution runtime
-├── tests/
-│   ├── test_render_vault.py
-│   ├── test_install_claude_layer.py
-│   ├── test_install_parity_steps.py
-│   ├── test_upgrade.py
-│   ├── test_vault_migration.py
-│   ├── test_vault_os_check.py
-│   └── test_claude_hooks.py
-└── site/
+├── tests/                  # installer, upgrade, rollback, migration, hooks and vault tests
+├── docs/
+│   └── readme/             # the images on this page
+└── site/                   # the walkthrough site
 ```
 
 ## Verify the release
@@ -109,7 +145,7 @@ vault-os/
 python3 -m unittest discover -s tests -v
 ```
 
-The tests run every hook self-test, install the Claude layer into temporary homes for each platform, and render a clean vault that is checked end to end: policy chain, local Git, all three indexes under locks, authority receipts, and a live retrieval query. The upgrade tests install the previous public release with a foreign vault into a temporary home, upgrade it to parity 0, roll it back to the exact previous tree, kill the upgrade at every phase and recover it.
+The tests run every hook self-test, install the Claude layer into temporary homes for each platform, and build a clean vault that is checked end to end: its rules, a local Git repository, all three indexes and a live search. The upgrade tests install the previous public release next to a vault that did not come from Vault OS, upgrade it until nothing differs from the release, roll it back to the exact previous tree, kill the upgrade at every phase and recover it.
 
 ## License
 
