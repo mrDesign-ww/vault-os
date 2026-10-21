@@ -499,6 +499,9 @@ def needed_shapes(layer, dests=()):
 
 def shape_question(rel, shape, want):
     zone = zone_of(rel + "/")  # a zone's own folder (wiki/personal) counts as that zone
+    if shape == "special":
+        return ("%s is a special file (a FIFO, socket or device): the upgrade never opens it. Move it out of the "
+                "vault, then run the dry run again" % rel)
     if shape in fsx.LINK_SHAPES:
         return ("symbolic link %s (%s) is at a system path inside the %s zone; the memory index refuses links there: "
                 "replace it with the real file or folder, or move it out of wiki/, then run the dry run again"
@@ -522,7 +525,7 @@ def shape_preflight(vault, need):
         shape = fsx.shape(os.path.join(vault, *rel.split("/")))
         if shape in ("absent", need[rel]):
             continue
-        if in_zone(rel):
+        if shape == "special" or in_zone(rel):
             asked[rel] = shape_question(rel, shape, need[rel])
         elif shape in fsx.LINK_SHAPES:
             beside[rel] = migrate.LINK_REASON
@@ -973,6 +976,9 @@ def _build(repo, answers, homes, stamp, opts, today, ctx):
         for host, h in sorted((u.get("hosts") or {}).items()):
             if h["status"] == "unavailable" and u["status"] != "unavailable":
                 warnings.append("upstream skill %s for %s skipped: %s" % (u["item"]["name"], host, h["reason"]))
+    for rel, item in sorted(detail.get("kept", {}).items()):
+        if item["reason"] == migrate.SPECIAL_REASON and rel not in asked:
+            asked[rel] = shape_question(rel, "special", "file")
     questions = [asked[rel] for rel in sorted(asked)]
     for folder, count in sorted(migration.get("blocked", {}).items()):
         questions.append("folder %s (%d files) looks like a separate zone of your old system: say where it goes "

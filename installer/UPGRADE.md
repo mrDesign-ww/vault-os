@@ -276,7 +276,8 @@ failed and was rolled back, 8 engine error (the plan contradicts itself; nothing
 0. Path-shape preflight (read-only, part of the plan): every vault path the plan writes, splits, seeds or moves
    into, every folder above one, the owned folders and the folders the vault tools write into
    (`.vault-meta/memory-index`, `write`, `locks-v2`) is classified with lstat: absent, folder, file, link to a file,
-   link to a folder, dangling link, link chain. The plan gives the expected shape: a file (or nothing) at a written
+   link to a folder, dangling link, link chain, special file (FIFO, socket or device; never opened, always a plan
+   question wherever it is in the vault, with the way out: move it out of the vault). The plan gives the expected shape: a file (or nothing) at a written
    file, a real folder (or nothing) everywhere above. Each mismatch becomes exactly one of two things (2.2): a
    rename beside its path in phase 0, or, inside a zone, a plan question with a way out. The move destinations add
    the folders above them, so the preflight runs again until nothing new is needed. A move never lands on an
@@ -412,7 +413,8 @@ case-insensitive volume), system paths.
 Kept in place, listed in the plan, never scanned or moved:
 
 - Symbolic links (to files or folders, broken ones included): "symbolic link". They stay usable as link targets
-  by path; a relative link whose target moves, or whose target folder holds files that move, is named in a
+  by path: a note link that goes through such a link (`Shelf/Item.md`) is rebased as a path string only, the
+  target folder is never listed or read, and a link renamed beside (`Reference (2)`) is followed. A relative link whose target moves, or whose target folder holds files that move, is named in a
   warning. A link at a system path is not kept: it is renamed beside that path (2.2), with the same warning.
 - Paths an earlier upgrade renamed beside a system path (the stamp lists them): "renamed beside a system path by
   an earlier upgrade", one unit each.
