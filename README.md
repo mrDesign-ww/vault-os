@@ -1,42 +1,46 @@
+<p>
 <picture>
   <source media="(max-width: 600px)" srcset="docs/readme/hero-narrow.webp">
-  <img src="docs/readme/hero.webp" alt="Vault OS. Claude Code, run like a design studio. Three agent cards, Haiku, Sonnet and Opus, send a question to the Vault OS iPhone app.">
+  <img src="docs/readme/hero.webp" alt="Vault OS. Claude Code, run like a design studio. Three agent cards, Haiku with 3 agent types, Sonnet with 3 and Opus with 4, send a question to the Vault OS iPhone app.">
 </picture>
+</p>
 
-**Vault OS** sets up Claude Code to work like a small design studio. A main session plans each task and hands the work to agents in three model tiers, a private Obsidian vault keeps what they learn, and only the decisions come to you. It is made for people who design and build product UI with Claude Code every day.
+**Vault OS** is a ready-made setup for Claude Code: a main session that plans and delegates, agents on the right model for each job, a private Obsidian vault for memory, and guards that keep long unattended work safe. It is made for people who design and build product UI with Claude Code every day.
 
 [Walkthrough site](https://mrdesign-ww.github.io/vault-os/) · [Install guide](INSTALL.md) · [Upgrade and rollback](installer/UPGRADE.md) · [Changelog](CHANGELOG.md)
 
-> [!IMPORTANT]
-> This repository is an empty, parameterized template. It holds no projects, notes, session traces, accounts, tokens, private paths or client material.
+> [!NOTE]
+> This repository ships the system only: no projects, notes, session traces, accounts, tokens, private paths or client material.
 
 ## How it works
 
+<p>
 <picture>
   <source media="(max-width: 600px)" srcset="docs/readme/how-it-works-narrow.svg">
-  <img src="docs/readme/how-it-works.svg" alt="How a question reaches you. Claude Code, the Obsidian vault and the Mac daemon run on your Mac; the iPhone app is your phone. 1: an agent writes a question card to the vault. 2: the Mac daemon sends it to the iPhone app. 3: your answer goes back through the daemon to the card. 4: the waiting agent picks it up. The Mac daemon and the iPhone app are in development.">
+  <img src="docs/readme/how-it-works.svg" alt="How a question reaches you. Claude Code, the Obsidian vault and the Mac daemon run on your Mac; the iPhone app is your phone. 1: an agent asks a question. 2: the Mac daemon sends it to the iPhone app. 3: your answer goes back through the daemon. 4: the waiting agent picks it up. The Mac daemon and the iPhone app are in development.">
 </picture>
+</p>
 
-You give the main Claude Code session a task. It splits the work and starts agents by tier: Haiku for chores and checks, Sonnet for builds from a spec, Opus for architecture, design and review. Each role reads a small, budgeted set of notes from the vault, so an agent starts with the context its job needs. When a choice is yours, the work waits for you:
+You give the main Claude Code session a task. It splits the work and starts agents by tier: Haiku for chores and checks, Sonnet for builds from a spec, Opus for architecture, design and review. Each role reads a small, budgeted set of notes from the vault, so an agent starts with the context its job needs. When a choice is yours, the work waits for you. With the app, a question takes this path:
 
-1. **Question card.** The agent writes one decision card per question: the options, its recommendation and room for your answer.
-2. **To your phone.** The Mac daemon sends the card to the iPhone app.
-3. **Your answer.** You tap an option or record a voice note, and the answer lands on the card.
-4. **Agent picks it up.** The waiting agent goes on, then marks the card applied with a one-line note.
+1. **Question.** The agent asks you a question: the options, its recommendation and room for your answer.
+2. **To your phone.** The Mac daemon sends the question to the iPhone app.
+3. **Your answer.** You tap an option or record a voice note, and the answer goes back to the agent.
+4. **Agent picks it up.** The waiting agent goes on, then reports what it applied in a one-line note.
 
-The Mac daemon and the iPhone app are in development. Until they ship, questions come to you in the chat, or in the decision channel you set up for a project.
+The Mac daemon, the iPhone app and the decision board are in development. Until they ship, questions come to you in the chat, or in the decision channel you set up for a project.
 
 ## The iPhone app
 
 > [!NOTE]
-> In development. The app comes to this repository when it is done. These are real screens of the current build, shot with made-up demo data.
+> In development. The app and the board come to this repository when they are done. These are real screens of the current build, shot with made-up demo data.
 
 <p align="center">
   <img src="docs/readme/app-answer.webp" width="264" alt="Answer in one tap. The recommended answer comes first: accept it or pick another. The app shows the question Show yearly prices by default? with three options and an Accept button.">
   <img src="docs/readme/app-work.webp" width="264" alt="All work at a glance. Every task with its progress and what waits on you. The Work tab shows a pricing page task at 64 percent that needs you twice.">
   <img src="docs/readme/app-task.webp" width="264" alt="One task, step by step. Its steps, its round and the result that needs your look. A progress dial reads 64 percent, 9 of 14 steps, above the latest result.">
   <img src="docs/readme/app-steer.webp" width="264" alt="Mark what to change. Point at the spot on a result and the note goes to the agent. A pricing card design carries three numbered marks on the price, the button and the billing toggle.">
-  <img src="docs/readme/app-receipt.webp" width="264" alt="Know it landed. Sent, picked up, applied: each step comes back with a note. A receipt lists Sent, On Mac, Picked up and Applied, with the agent's note.">
+  <img src="docs/readme/app-receipt.webp" width="264" alt="Know it landed. Sent, picked up, applied: you see each step, and the agent's note at the end. A receipt lists Sent, On Mac, Picked up and Applied, with the agent's note.">
 </p>
 
 Also in the works: a push for each new question, and several questions from one task shown as one stack.
@@ -47,7 +51,7 @@ Also in the works: a push for each new question, and several questions from one 
 | --- | --- |
 | Agents | 10 agent types in three model tiers. Haiku: `runner`, `checker`, `locator`. Sonnet: `builder`, `worker`, `look-reviewer`. Opus: `architect`, `reviewer`, `product-designer`, `general-purpose`. |
 | Rules | Global rules plus an orchestration doc for main sessions: one fresh agent per task, briefs with at most 3 required documents, at most two fix rounds on a part before the method changes. |
-| Memory | An empty, private Obsidian vault: PARA folders, work, personal and client zones kept apart, four trust levels from L0 evidence to owner-approved L3 policy, and a local index per zone that refuses to answer when it is stale. |
+| Memory | An empty, private Obsidian vault: PARA folders, work, personal and client zones kept apart, four trust levels, from raw evidence to rules you approved, and a local index per zone that refuses to answer when it is stale. |
 | Guards | Hooks for unattended work: no process kills by pattern and no `rm` with globs, a pause at 98% of the weekly usage limit, a snapshot before compaction, big-image downscaling for build agents (macOS), and a daily check for a newer release. |
 | Design layer | `skill-router` (1 to 3 skills per job), `figma-craft` with read-only Figma gate scripts, the `product-designer` agent, and design-spec and design-round templates. |
 | Skills | 74 bundled skills, each with its source and licence, and 33 plugin entries after install (9 on, the rest off until you turn them on). gstack and Remotion come from their upstream at a pinned commit with `--upstream-skills`. |
@@ -56,7 +60,7 @@ Also in the works: a push for each new question, and several questions from one 
 ## Safe to install, safe to upgrade
 
 - **Plan first.** The upgrade shows its full plan and changes nothing without your yes.
-- **Your files stay yours.** Notes, attachments, memory, sessions and credentials are never deleted or changed. An upgrade may move notes into the vault structure and rewrite their links; it never deletes them.
+- **Your files stay yours.** Notes, attachments, memory, sessions and credentials are never deleted. An upgrade may move notes into the vault structure and rewrite their links; credentials and sessions are never touched.
 - **Everything removed is archived.** System folders end up matching the release exactly. Whatever the upgrade removes or overwrites there, your own skills in `~/.claude/skills` included, is first copied to `~/vault-os-backups/<time>/`, and nothing deletes that archive.
 - **Rollback.** `rollback` first shows what it will restore, keep and move aside, and runs only with `--confirm` and that preview's id. Right after an upgrade it returns the exact previous tree; notes and commits you made since then stay.
 - **Crash safe.** `recover` rolls back an upgrade that was killed halfway.
@@ -104,8 +108,8 @@ Use the approval flag only after the owner explicitly approves the bundled L3 do
 
 - Obsidian files stay the source of truth on your machine.
 - Generated retrieval indexes and session traces stay local and are ignored by Git.
-- Small index authority receipts are committed locally, so retrieval can detect stale or unreviewed state.
-- Personal and client zones are never eligible for work reflection.
+- Small receipts for each index are committed locally, so retrieval can tell when an index is stale or was never reviewed.
+- Personal and client zones are kept out of the optional memory review, which is off by default.
 - Authentication files, local MCP configuration, hook trust hashes and existing user settings are never shipped.
 - Optional third-party plugins and connected services have their own network and privacy policies. Vault OS itself does not upload vault contents.
 - Bundled hyperframes and media-use skills send anonymous usage telemetry to HeyGen; opt out with `HYPERFRAMES_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`.
@@ -131,8 +135,7 @@ vault-os/
 │   └── vault-template/     # empty vault, memory engine, hooks, and evolution runtime
 ├── tests/                  # installer, upgrade, rollback, migration, hooks and vault tests
 ├── docs/
-│   ├── readme/             # the images on this page
-│   └── tools/app-screens/  # re-shoots the app screens with demo data
+│   └── readme/             # the images on this page
 └── site/                   # the walkthrough site
 ```
 
@@ -142,7 +145,7 @@ vault-os/
 python3 -m unittest discover -s tests -v
 ```
 
-The tests run every hook self-test, install the Claude layer into temporary homes for each platform, and render a clean vault that is checked end to end: policy chain, local Git, all three indexes under locks, authority receipts and a live retrieval query. The upgrade tests install the previous public release with a foreign vault into a temporary home, upgrade it to parity 0, roll it back to the exact previous tree, kill the upgrade at every phase and recover it.
+The tests run every hook self-test, install the Claude layer into temporary homes for each platform, and build a clean vault that is checked end to end: its rules, a local Git repository, all three indexes and a live search. The upgrade tests install the previous public release next to a vault that did not come from Vault OS, upgrade it until nothing differs from the release, roll it back to the exact previous tree, kill the upgrade at every phase and recover it.
 
 ## License
 
