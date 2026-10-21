@@ -23,17 +23,28 @@ CLAUDE_DEFAULT_DIR = "{{CLAUDE_TRACE_PATH}}/memory"
 CODEX_DEFAULT_DB = os.path.expanduser("~/.codex/memories_1.sqlite")
 INDEX_NAME = "MEMORY.md"
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")
+PROJECT_RE = re.compile(r"(?m)^\s*type:\s*project\b")
 STATUS_RE = re.compile(
     r"\b(status|M\d+\b|next|done|pending|TODO|WIP|in progress|milestone|phase)\b", re.I
 )
 
 
-def parse_index(index_path):
+def parse_index(index_path, _seen=None):
+    """Имена файлов, на которые ссылается индекс, плюс содержимое подындексов
+    `*-index.md`, на которые он ссылается (MEMORY.md -> map-flip-index.md -> ...)."""
     if not os.path.isfile(index_path):
         return set()
+    seen = _seen if _seen is not None else set()
+    seen.add(os.path.realpath(index_path))
     with open(index_path, encoding="utf-8") as f:
         text = f.read()
-    return {os.path.basename(m.group(1)) for m in LINK_RE.finditer(text)}
+    names = {os.path.basename(m.group(1)) for m in LINK_RE.finditer(text)}
+    base = os.path.dirname(index_path)
+    for name in sorted(names):
+        sub = os.path.join(base, name)
+        if name.endswith("-index.md") and os.path.realpath(sub) not in seen:
+            names |= parse_index(sub, seen)
+    return names
 
 
 def frontmatter_gaps(path):
@@ -173,12 +184,16 @@ def main():
                 body = open(path, encoding="utf-8").read()
             except OSError:
                 body = ""
-            if STATUS_RE.search(body):
+            # feedback and reference notes are rules, not statuses
+            if PROJECT_RE.search(body) and STATUS_RE.search(body):
                 status_stale.append((f, age))
-        clusters.setdefault(cluster_key(f), []).append(f)
+        # symlinks belong to another project's memory folder
+        if not os.path.islink(path):
+            clusters.setdefault(cluster_key(f), []).append(f)
 
     consolidation = {
-        k: sorted(v) for k, v in clusters.items() if len(v) >= args.cluster_min
+        k: sorted(v) for k, v in clusters.items()
+        if len(v) >= args.cluster_min and k + "-index.md" not in fileset
     }
 
     result = {

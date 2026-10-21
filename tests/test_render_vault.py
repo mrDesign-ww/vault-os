@@ -34,6 +34,17 @@ class RenderVaultTest(unittest.TestCase):
             self.assertEqual(len(rendered["reflection_policy_sha256"]), 64)
             self.assertFalse((target / "CLAUDE.template.md").exists())
             self.assertTrue((target / "CLAUDE.md").exists())
+            local = target / ".claude" / "settings.local.json"
+            self.assertFalse((target / ".claude" / "settings.local.template.json").exists())
+            local_settings = json.loads(local.read_text())
+            self.assertEqual(local_settings["skillOverrides"]["higgsfield-generate"], "name-only")
+            self.assertNotIn("_comment", local_settings)
+            for name in ("higgsfield-generate", "higgsfield-soul-id", "higgsfield-websites"):
+                self.assertTrue((target / ".agents" / "skills" / name / "SKILL.md").is_file())
+                self.assertTrue((target / ".agents" / "skills" / name / "LICENSE").is_file())
+                self.assertTrue((target / ".claude" / "skills" / name / "SKILL.md").is_file())
+            self.assertTrue(json.loads((target / ".obsidian" / "plugins" / "dataview" / "data.json")
+                                       .read_text())["enableDataviewJs"])
 
             for path in target.rglob("*"):
                 if path.is_file():
@@ -60,7 +71,8 @@ class RenderVaultTest(unittest.TestCase):
             run(["git", "config", "user.name", "Vault OS Test"], target)
             run(["git", "config", "user.email", "test@example.invalid"], target)
             run(["git", "add", "."], target)
-            run(["git", "commit", "-qm", "Initialize Vault OS"], target)
+            run(["git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "commit", "-qm",
+                 "Initialize Vault OS"], target)
             self_tests = [
                 ["scripts/memory-candidates.py", "self-test"],
                 ["scripts/wiki-lock.py", "self-test"],
@@ -87,7 +99,8 @@ class RenderVaultTest(unittest.TestCase):
                 finally:
                     run(["bash", "scripts/wiki-lock.sh", "release", lock_path, token], target)
             run(["git", "add", ".vault-meta/memory-index"], target)
-            run(["git", "commit", "-qm", "Bind memory index authority"], target)
+            run(["git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "commit", "-qm",
+                 "Bind memory index authority"], target)
             result = json.loads(run([
                 sys.executable, "scripts/memory-model.py", "retrieve",
                 "memory source of truth", "--zone", "work", "--loadout", "general",

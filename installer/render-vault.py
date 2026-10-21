@@ -161,7 +161,8 @@ def approvals_template_hash(approvals):
     return hashlib.sha256(canonical_json(normalized)).hexdigest()
 
 
-def bind_trust(root, owner, date, now, vault_id, claude_trace):
+def bind_trust(root, owner, date, now, vault_id, claude_trace, vault_path=None):
+    """Bind the trust chain in root for the vault at vault_path (default root; the upgrade binds a staging copy)."""
     metadata = root / ".vault-meta"
     evolution = metadata / "evolution"
     memory_model = root / "scripts" / "memory-model.py"
@@ -218,7 +219,7 @@ def bind_trust(root, owner, date, now, vault_id, claude_trace):
         "mode": "standing-autonomous-delegation", "valid_from": date,
         "valid_until": "9999-12-31", "not_before": now,
         "allowed_platform_zones": [["claude", "work"], ["codex", "work"]],
-        "vault": {"id": vault_id, "path": str(root)},
+        "vault": {"id": vault_id, "path": str(vault_path or root)},
         "roots": {
             "trace_claude": str(claude_trace),
             "trace_codex": str(Path.home() / ".codex" / "sessions"),
@@ -280,6 +281,32 @@ def bind_trust(root, owner, date, now, vault_id, claude_trace):
     return policy_hash
 
 
+def vault_identity(target):
+    """The vault id and Claude trace path that are bound to the absolute vault path."""
+    vault_id = "vault-os-" + hashlib.sha256(str(target).encode()).hexdigest()[:16]
+    claude_trace = Path.home() / ".claude" / "projects" / str(target).replace(os.sep, "-")
+    return vault_id, claude_trace
+
+
+def render_files(root, target, owner, title, language, client_label, date):
+    """Copy and render the template into root as if it lived at target (the upgrade renders into a staging root)."""
+    shutil.copytree(TEMPLATE, root, dirs_exist_ok=True)
+    vault_id, claude_trace = vault_identity(target)
+    render_placeholders(root, {
+        "OWNER_NAME": owner, "VAULT_TITLE": title, "DATE": date,
+        "LANGUAGE": language, "CLIENT_LABEL": client_label,
+        "VAULT_ID": vault_id, "CLAUDE_TRACE_PATH": str(claude_trace),
+    })
+    (root / "CLAUDE.template.md").rename(root / "CLAUDE.md")
+    (root / "AGENTS.template.md").rename(root / "AGENTS.md")
+    (root / ".vault-meta" / "mode.template.json").rename(root / ".vault-meta" / "mode.json")
+    # Vault-local settings (skill visibility in the vault, plugins off here, hot cache at start): machine-local and
+    # git-ignored in the rendered vault, so they ship under a template name.
+    (root / ".claude" / "settings.local.template.json").rename(root / ".claude" / "settings.local.json")
+    write_scaffold(root, date, title, client_label)
+    return vault_id, claude_trace
+
+
 def validate_field(value, label):
     value = value.strip()
     if not value or any(char in value for char in ('"', "\\", "\n", "\r", "{{", "}}")):
@@ -317,18 +344,7 @@ def main():
     if target == TEMPLATE or TEMPLATE in target.parents or (target.exists() and any(target.iterdir())):
         parser.error("target must be a new or empty directory outside this repository")
     target.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(TEMPLATE, target, dirs_exist_ok=True)
-    vault_id = "vault-os-" + hashlib.sha256(str(target).encode()).hexdigest()[:16]
-    claude_trace = Path.home() / ".claude" / "projects" / str(target).replace(os.sep, "-")
-    render_placeholders(target, {
-        "OWNER_NAME": owner, "VAULT_TITLE": title, "DATE": args.date,
-        "LANGUAGE": language, "CLIENT_LABEL": client_label,
-        "VAULT_ID": vault_id, "CLAUDE_TRACE_PATH": str(claude_trace),
-    })
-    (target / "CLAUDE.template.md").rename(target / "CLAUDE.md")
-    (target / "AGENTS.template.md").rename(target / "AGENTS.md")
-    (target / ".vault-meta" / "mode.template.json").rename(target / ".vault-meta" / "mode.json")
-    write_scaffold(target, args.date, title, client_label)
+    vault_id, claude_trace = render_files(target, target, owner, title, language, client_label, args.date)
     now = args.date + "T00:00:00Z"
     policy_hash = bind_trust(target, owner, args.date, now, vault_id, claude_trace)
     unresolved = []

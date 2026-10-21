@@ -1,0 +1,30 @@
+{
+  "about": "normalised sha256 (manifest.normalized_note_sha) of every vault note template shipped by 28777ca and later, and the community plugin ids earlier templates listed; regenerate with the test hint",
+  "notes": {
+    "Reference/Claude Commands.md": [
+      "fa57eae9ea028bc99c4f68182233649a82342666e8a9a7f7fa1cfb50a114300c"
+    ],
+    "Reference/Obsidian Plugins.md": [
+      "49ad0afad7dc939c4dd9a08c39a5db0de358f900322283b0a61f68bb9bc0209a",
+      "d3055745e9edd99a9bf845ba09865f1935f54040bdfd444fdb0e9403088765d6"
+    ],
+    "Reference/_index.md": [
+      "dede2a9dd0058aa661e125ea28a4a10032aaa67ae3d174715aeb9240bcbc168b"
+    ],
+    "wiki/resources/concepts/Autonomous Reflection Delegation Policy.md": [
+      "a6fedec98b9effb5f235524b4fbea43ee87a1dab946dec12e6dd25eb6fbc529e"
+    ],
+    "wiki/resources/concepts/L0-L3 Memory Model for the Vault.md": [
+      "8bcf693150ac2af2a8094b39f1890ddf49fd94fe4878009037bb60f7e9a1bae9"
+    ]
+  },
+  "community_plugins_old": [
+    "obsidian-banners",
+    "obsidian-excalidraw-plugin",
+    "obsidian-git",
+    "obsidian-icon-folder",
+    "obsidian-kanban",
+    "obsidian-mind-map",
+    "obsidian-tasks-plugin"
+  ]
+}

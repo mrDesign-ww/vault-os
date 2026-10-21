@@ -6,6 +6,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import secrets
 import stat
 import sys
@@ -221,12 +222,40 @@ def meta_lock():
         raise
 
 
+# Only short hook leases recover by themselves: a lifecycle hook killed by its
+# timeout never releases. A writer lease (save, ingest, evolution) stays
+# fail-closed until its owner releases it or clear-stale confirms it is dead.
+ABANDONED_AFTER = 600
+SHORT_LEASE_MAX = 300
+TAKEOVER_LOG = VAULT / ".vault-meta" / "evolution" / "lifecycle-degraded.log"
+
+
+def abandoned_short_lease(record, now):
+    try:
+        expires = float(record["expires_at"])
+        lease = expires - float(record.get("renewed_at", record["created_at"]))
+    except (KeyError, TypeError, ValueError):
+        return False
+    return 0 < lease <= SHORT_LEASE_MAX and expires + ABANDONED_AFTER <= now
+
+
 def acquire(path, ttl, directory=None):
     now = time.time()
     target = lock_path(path)
     record = read_record(target, directory)
     if record:
-        return None
+        if not abandoned_short_lease(record, now):
+            return None
+        note = "%s wiki-lock took over abandoned lease path=%s gen=%s expired_at=%s" % (
+            time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)), path,
+            record.get("generation"), record.get("expires_at"),
+        )
+        print("WARN: " + note, file=sys.stderr)
+        try:
+            with open(TAKEOVER_LOG, "a", encoding="utf-8") as handle:
+                handle.write(note + "\n")
+        except OSError:
+            pass
     generation = bump_generation(path, directory)
     token = secrets.token_hex(32)
     atomic_json(target, {
@@ -347,7 +376,7 @@ def main():
                 require_owner(".vault-meta/write/work", token)
                 assert read_generation(".vault-meta/write/work") == generation
                 record = read_record(lock_path(".vault-meta/write/work"))
-                record["expires_at"] = 0
+                record["expires_at"] = time.time() - 1
                 atomic_json(lock_path(".vault-meta/write/work"), record)
                 assert acquire(".vault-meta/write/work", 60) is None
                 try:
@@ -377,6 +406,45 @@ def main():
                     pass
                 else:
                     raise AssertionError("cleared stale token remained valid")
+                globals()["TAKEOVER_LOG"] = Path(directory) / "takeover.log"
+                long_token = acquire(".vault-meta/write/work", 3600)
+                long_record = read_record(lock_path(".vault-meta/write/work"))
+                long_record["expires_at"] = time.time() - ABANDONED_AFTER - 1
+                long_record["renewed_at"] = long_record["expires_at"] - 3600
+                atomic_json(lock_path(".vault-meta/write/work"), long_record)
+                assert acquire(".vault-meta/write/work", 60) is None
+                require_owner(".vault-meta/write/work", long_token, allow_expired=True)
+                assert clear_stale(".vault-meta/write/work")
+                undated_token = acquire(".vault-meta/write/work", 60)
+                undated_record = read_record(lock_path(".vault-meta/write/work"))
+                del undated_record["expires_at"]
+                atomic_json(lock_path(".vault-meta/write/work"), undated_record)
+                assert acquire(".vault-meta/write/work", 60) is None
+                undated_record["expires_at"] = 0
+                atomic_json(lock_path(".vault-meta/write/work"), undated_record)
+                assert clear_stale(".vault-meta/write/work")
+                grace_token = acquire(".vault-meta/write/work", 60)
+                grace_record = read_record(lock_path(".vault-meta/write/work"))
+                grace_record["expires_at"] = time.time() - 1
+                grace_record["renewed_at"] = grace_record["expires_at"] - 60
+                atomic_json(lock_path(".vault-meta/write/work"), grace_record)
+                assert acquire(".vault-meta/write/work", 60) is None
+                assert clear_stale(".vault-meta/write/work")
+                dead_token = acquire(".vault-meta/write/work", 60)
+                dead_record = read_record(lock_path(".vault-meta/write/work"))
+                dead_record["expires_at"] = time.time() - ABANDONED_AFTER - 1
+                dead_record["renewed_at"] = dead_record["expires_at"] - 60
+                atomic_json(lock_path(".vault-meta/write/work"), dead_record)
+                fresh_token = acquire(".vault-meta/write/work", 60)
+                assert fresh_token and fresh_token != dead_token
+                assert "took over abandoned lease" in (Path(directory) / "takeover.log").read_text()
+                require_owner(".vault-meta/write/work", fresh_token)
+                try:
+                    require_owner(".vault-meta/write/work", dead_token, allow_expired=True)
+                except PermissionError:
+                    pass
+                else:
+                    raise AssertionError("abandoned token survived takeover")
         finally:
             globals()["LOCK_DIR"] = original_lock_dir
         print("wiki-lock self-test: PASS")
@@ -433,7 +501,8 @@ def main():
             }, sort_keys=True))
         elif args.command == "list":
             for name in sorted(
-                name for name in os.listdir(directory) if name.endswith(".json")
+                name for name in os.listdir(directory)
+                if re.fullmatch(r"[0-9a-f]{64}\.json", name)
             ):
                 record = read_record(LOCK_DIR / name, directory)
                 print(json.dumps({

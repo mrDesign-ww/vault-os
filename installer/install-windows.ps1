@@ -38,6 +38,41 @@ function Make-Shortcut([string]$Vault, [string]$Name = 'Vault') {
   Write-Host "Shortcut created: $lnk"
 }
 
+function Install-ClaudeLayer([string]$Owner, [string]$Language, [switch]$Backup, [switch]$UpstreamSkills,
+                             [switch]$BypassPermissions, [string[]]$Mcp = @()) {
+  # Global Claude layer (agents, hooks, docs, templates, status line, skills, CLAUDE.md, settings merge).
+  # Runs natively on Windows; macOS-only hooks and POSIX shell scripts are left out automatically.
+  $script = Join-Path $PSScriptRoot 'install-claude-layer.py'
+  $argv = @($script, '--owner', $Owner, '--language', $Language)
+  if ($Backup) { $argv += '--backup' }
+  if ($UpstreamSkills) { $argv += '--upstream-skills' }
+  if ($BypassPermissions) { $argv += '--bypass-permissions' }
+  foreach ($m in $Mcp) { $argv += @('--mcp', $m) }
+  & python @argv
+}
+
+function Invoke-VaultOS([string[]]$Argv) {
+  # The upgrade engine. On Windows it reads (detect, the dry run, parity) and refuses every write with
+  # "not yet on Windows: run the upgrade inside WSL", before touching anything.
+  $script = Join-Path $PSScriptRoot 'vault-os.py'
+  & python $script @Argv
+}
+
+function Detect-VaultOS { Invoke-VaultOS @('detect') }
+
+function Upgrade-VaultOS([string]$Vault, [string]$Confirm = '', [string[]]$Extra = @()) {
+  $argv = @('upgrade', '--vault', $Vault) + $Extra
+  if ($Confirm) { $argv += @('--confirm', $Confirm) }
+  Invoke-VaultOS $argv
+}
+
+function Rollback-VaultOS([string]$Archive, [string]$Confirm = '') {
+  # Without -Confirm it prints the preview; -Confirm takes the id from that preview.
+  $argv = @('rollback', $Archive)
+  if ($Confirm) { $argv += @('--confirm', $Confirm) }
+  Invoke-VaultOS $argv
+}
+
 function Backup([string]$File) {
   if (Test-Path $File) {
     Copy-Item $File "$File.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"

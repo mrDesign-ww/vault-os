@@ -1,5 +1,6 @@
 {
   "alwaysUpdateLinks": true,
   "newLinkFormat": "shortest",
-  "attachmentFolderPath": "_attachments"
+  "attachmentFolderPath": "_attachments",
+  "userIgnoreFilters": []
 }

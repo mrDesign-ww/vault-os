@@ -2,33 +2,12 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume",
+        "matcher": "startup",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f .vault-meta/evolution/health-check.py ] && /usr/bin/python3 .vault-meta/evolution/health-check.py 2>/dev/null || printf '🧹 VAULT EVOLUTION: health-check launch unavailable\\n'"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" ]; then /usr/bin/python3 \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" prompt-start; fi",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" ]; then /usr/bin/python3 \"$CLAUDE_PROJECT_DIR/.vault-meta/evolution/claude-trace-hook.py\" stop; fi",
-            "timeout": 10
+            "command": "[ -f .vault-meta/evolution/health-check.py ] && /usr/bin/python3 .vault-meta/evolution/health-check.py 2>/dev/null || printf '🧹 VAULT EVOLUTION: health-check launch unavailable\\n'",
+            "timeout": 15
           }
         ]
       }

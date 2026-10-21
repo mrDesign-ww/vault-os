@@ -83,4 +83,4 @@ Respect autoplay and sound preferences. Any nonessential loop must stop when off
 - Expensive effects stay smooth on the target device.
 - Removing an animation would lose meaning or authored character, not merely decoration.
 
-When motion earns its place, hand off to `$impeccable polish` for the final pass.
+When motion earns its place, hand off to `/impeccable polish` for the final pass.

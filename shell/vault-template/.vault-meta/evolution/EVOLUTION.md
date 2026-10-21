@@ -1,6 +1,6 @@
 # Vault Evolution: общий плейбук самосовершенствования
 
-Единый прогон гигиены и обучения общего vault. Его может выполнять Claude через `/evolution` или Codex через `$evolution`. Это не автономный робот: Влад участвует во всех деструктивных решениях.
+Единый прогон гигиены и обучения общего vault. Его может выполнять Claude через `/evolution` или Codex через `$evolution`. Это не автономный робот: владелец участвует во всех деструктивных решениях.
 
 Идея заимствована из Hermes Agent (Nous Research): closed learning loop, Curator и trace-driven improvement. Она адаптирована под общий стек Codex + Obsidian + Claude. Ключевое отличие: человек остается в петле на всех деструктивных операциях.
 
@@ -50,7 +50,7 @@ canonical candidate inbox активной зоны.
 2. **Log append-only.** `log.md` любой зоны НИКОГДА не редактируется задним числом. Уменьшение объёма только через `wiki-fold` (сворачивает старые записи в fold-страницу, не удаляя смысл).
 3. **hot.md является кэшем.** Не используй его как журнал. После значимой операции перезапиши его кратким актуальным контекстом активной зоны, не более 500 слов.
 4. **wiki-lock перед пакетными правками вики.** Все batch writers используют один path `.vault-meta/write/ZONE`. `acquire` возвращает owner token. Проверяй или продлевай его при долгом прогоне. `release` принимает тот же token и не может снять чужой lock. Default TTL 6 часов.
-5. **Никогда молчаливой записи в load-bearing.** Правки `CLAUDE.md`, `AGENTS.md`, внутренних memory и skills идут только как предложения на одобрение владельца. Исключение: явно заказанные Владом настройки и чисто механические безопасные фиксы.
+5. **Никогда молчаливой записи в load-bearing.** Правки `CLAUDE.md`, `AGENTS.md`, внутренних memory и skills идут только как предложения на одобрение владельца. Исключение: явно заказанные владельцем настройки и чисто механические безопасные фиксы.
 6. **Клиентские данные не покидают машину.** L0-L3 build всегда synthetic и on-machine. Legacy plugin retrieval запускается только с `--no-llm`. Egress-tier (claude-cli / Anthropic API) разрешён только по явному решению владельца для конкретного прогона.
 7. **Внутренняя memory вне vault-git.** Claude-memory и Codex SQLite не входят в репозиторий vault. Не копируй их содержимое между клиентами.
 
@@ -92,10 +92,13 @@ canonical candidate inbox активной зоны.
 3. Если index отсутствует, устарел или отличается от Markdown: взять shared zone lock, запустить `/usr/bin/python3 scripts/memory-model.py build --zone ZONE --lock-token TOKEN`, затем `/usr/bin/python3 scripts/memory-model.py validate --zone ZONE --lock-token TOKEN`.
 4. Сохранить token до финализации. После checkpoint и release выполнить project-scoped запрос с подходящим named loadout: `/usr/bin/python3 scripts/memory-model.py retrieve "active project state" --zone ZONE --project PROJECT --loadout ROLE`. Проверить snippet и context budget.
 5. L0 не включается по умолчанию. Для source verification добавить `--include-l0`.
+6. Оценка поиска (перенесена сюда с SessionStart): после release выполнить `/usr/bin/python3 scripts/memory-model.py evaluate --zone ZONE`. Красный результат идёт в отчёт владельцу. Эталоны не переснимать без его слова.
 
 Legacy `.vault-meta/chunks/` и `.vault-meta/bm25/` остаются regenerable artifacts старого hybrid retrieval. Не использовать их напрямую для межзонных запросов, потому что прежний `--all` индекс не соблюдает zone isolation.
 
 ## Фаза 4 — Reflection (Tier 2, обучение на трении)
+
+> **Отключена для Claude и Codex по умолчанию.** Хуки `UserPromptSubmit` и `Stop` с `claude-trace-hook.py` в шаблоне сняты из `.claude/settings.json`, регистрация ходов Codex (`trace-session.py register` и `switch`) снята из `AGENTS.md`, `/evolution` и `$evolution` эту фазу не запускают, health-check её состояние не проверяет, `update-last-run.py` пишет только фазы текущего прогона. Код, состояние и описание ниже сохранены. Включение только по прямому слову владельца: вернуть хуки Claude в `.claude/settings.json`, вернуть правила регистрации Codex, затем `reseal-policy.py --apply` (политика пинит sha256 изменённых файлов). Детали lifecycle, которые раньше были в `CLAUDE.md`, описаны ниже в этой фазе.
 
 Цель: уроки, которые нигде не записались, оседают в рабочей памяти без
 повторяющихся пауз на owner approval.
@@ -142,6 +145,18 @@ approval нет. Policy drift, code drift или revocation отключает �
   с policy и scan identity. Тот же completion не может войти в новый outcome
   cycle. Policy rollout выполняется после завершения исходного cycle.
 - Любой записанный переход в personal или Client делает turn неeligible для work.
+- Ход, чей зарегистрированный промпт сам является harness-конвертом (например
+  `<task-notification>` фонового агента), хук закрывает как `harness-prompt` без
+  receipt и без записи в degraded log. Legacy receipt такого хода, записанный до
+  появления префикса в контракте, сканер принимает как verified с нулём сигналов:
+  конверт узнаётся только по exact hash зарегистрированного промпта.
+- Служебные сообщения, которые харнесс пишет сам и помечает `isMeta` (заметки о картинках
+  `[Image: …]`, тела скиллов, сообщения другой сессии, уведомления о лимите), и конверты
+  `<local-command-stdout>` и `<command-message>` являются продолжением хода и никогда не
+  считаются промптом человека. Хук принимает cwd в любой подпапке vault и отказывает вне его.
+- Регексы трения применяются к первым 80 символам сообщения или ко всему сообщению
+  короче 200 символов: поправка открывает сообщение, а отрицание внутри длинного брифа
+  («если нет, не нужно») трением не считается.
 - Legacy traces без lifecycle receipt не читаются ретроактивно.
 
 Команды автономного batch:
@@ -157,7 +172,7 @@ approval нет. Policy drift, code drift или revocation отключает �
    `python3 .vault-meta/evolution/trace-scan.py --platform PLATFORM --zone work --manifest MANIFEST --publish-receipt --lock-token TOKEN --json`.
 4. Разобрать сигналы трения:
    - я переспросил то, что уже есть в CLAUDE.md/памяти → инструкция плохо находится/сформулирована;
-   - Влад меня поправил («нет», «не так», «я же говорил») → есть невыраженное правило;
+   - владелец меня поправил («нет», «не так», «я же говорил») → есть невыраженное правило;
    - я пошёл не туда и переделывал → не хватает guardrail.
 5. Claude применяет `evolution-verifier`, Codex применяет `$evolution-verifier`.
    Verified L1/L2 можно материализовать автономно через обычный lock, provenance,
@@ -209,14 +224,14 @@ approval нет. Policy drift, code drift или revocation отключает �
 
 Reflection обслуживает ВЕСЬ цикл капсул (скилл или плейбук-документ), не только рождение.
 
-**Создание.** После strict-zone gate добавить `--repeats` к manifest-based команде. Это даёт грубые повторяющиеся темы. ДВОЙНОЙ ФИЛЬТР против разрастания: (1) я суждением перевожу тему в конкретную устойчивую процедуру и отсеиваю шум; (2) показываю Владу ГОТОВЫЙ ЧЕРНОВИК капсулы, он апрувит. Порог: процедура повторилась >= 3 раза.
+**Создание.** После strict-zone gate добавить `--repeats` к manifest-based команде. Это даёт грубые повторяющиеся темы. ДВОЙНОЙ ФИЛЬТР против разрастания: (1) я суждением перевожу тему в конкретную устойчивую процедуру и отсеиваю шум; (2) показываю владельцу ГОТОВЫЙ ЧЕРНОВИК капсулы, он апрувит. Порог: процедура повторилась >= 3 раза.
 - Триггер (гибрид): обычно коплю до /evolution; если повтор очевиден в моменте (третий раз подряд одно и то же) — предлагаю сразу.
 - Форма: проектная процедура (завязана на проект/файлы, напр. Figma-галерея) -> плейбук-документ В ПРОЕКТЕ (как этот файл), НЕ трогает глобальный набор скиллов. Кросс-проектная (доказанно нужна в >= 2 проектах) -> формальный скилл через `skill-creator`.
 - Пишется КАЧЕСТВЕННО, с суждением, не автоболванкой.
 
 **Обновление (дрейф).** Устаревшая капсула опаснее её отсутствия (молча ведёт по мёртвому пути).
-- Явная правка флоу (Влад сказал «теперь иначе») -> обновляю капсулу СРАЗУ (capture-on-spot, как память).
-- Неявный дрейф -> reflection ловит трение при исполнении капсулы (Влад поправил / я отклонился / результат не тот) -> предлагает обновить.
+- Явная правка флоу (владелец сказал «теперь иначе») -> обновляю капсулу СРАЗУ (capture-on-spot, как память).
+- Неявный дрейф -> reflection ловит трение при исполнении капсулы (владелец поправил / я отклонился / результат не тот) -> предлагает обновить.
 
 **Retire.** Капсула долго не используется или устарела совсем -> Curator предлагает архивировать.
 
@@ -224,9 +239,9 @@ Reflection обслуживает ВЕСЬ цикл капсул (скилл и�
 
 ## Финализация
 
-1. После каждого потенциально долгого этапа и перед следующей canonical записью выполнить `renew`, затем `check`. Перед build и scoped checkpoint повторить `check`. После всех Markdown, index, log и hot правок собрать и проверить memory index под token-owned lock: `build --zone ZONE --lock-token TOKEN`, затем `validate --zone ZONE --lock-token TOKEN`. Создать scoped local checkpoint, снять lock в `finally`, после чего выполнить живой project-scoped query и проверить содержание snippet. Retrieval build должен быть последней wiki-записью. Expired record остаётся блокирующим до token release или явного scoped stale-clear после подтверждения смерти writer.
-2. После успешного live query обновить platform-specific состояние в `.vault-meta/evolution/last-run.json` через `update-last-run.py --platform claude|codex --lock-token TOKEN`, явно передав все обязательные phases и typed evidence из успешного validate: `--retrieval-pages PAGES --retrieval-chunks CHUNKS --snapshot-sha256 SHA256 --loadouts-sha256 SHA256`. Writer проверяет work-lock до валидации и перед replace, отклоняет rollback даты, placeholders и retrieval complete без всех четырёх значений. Датированный completed reflection дополнительно требует exact `--reflection-manifest-sha256`, `--reflection-receipt-sha256`, `--reflection-disposition-sha256`, `--reflection-processed-sha256` и `--reflection-signal-count`. Если selector не нашёл завершённых turns, использовать `ready-autonomous-no-eligible-traces` вместе с exact `--reflection-noop-sha256`; пока lifecycle ждёт completion, использовать `ready-autonomous-awaiting-completion`; invalid policy или code anchor получает `blocked-delegation-invalid`. Затем создать scoped metadata checkpoint truthful post-query state. Состояние второго агента сохраняется. Без этого checkpoint evolution run не считается durable.
-3. Краткий отчёт Владу: что починено сразу, что ждёт апрува, что отложено.
+1. После каждого потенциально долгого этапа и перед следующей canonical записью выполнить `renew`, затем `check`. Перед build и scoped checkpoint повторить `check`. После всех Markdown, index, log и hot правок собрать и проверить memory index под token-owned lock: `build --zone ZONE --lock-token TOKEN`, затем `validate --zone ZONE --lock-token TOKEN`. Создать scoped local checkpoint, снять lock в `finally`, после чего выполнить живой project-scoped query и проверить содержание snippet. Retrieval build должен быть последней wiki-записью. Expired record писателя остаётся блокирующим до token release или явного scoped stale-clear после подтверждения смерти writer. Исключение только для брошенной аренды lifecycle-хука (TTL до 300 с, истекла больше 600 с назад): её забирает следующий acquire и пишет строку WARN в `.vault-meta/evolution/lifecycle-degraded.log`.
+2. После успешного live query обновить platform-specific состояние в `.vault-meta/evolution/last-run.json` через `update-last-run.py --platform claude|codex --lock-token TOKEN`, явно передав все обязательные phases и typed evidence из успешного validate: `--retrieval-pages PAGES --retrieval-chunks CHUNKS --snapshot-sha256 SHA256 --loadouts-sha256 SHA256`. Writer проверяет work-lock до валидации и перед replace, отклоняет rollback даты, placeholders и retrieval complete без всех четырёх значений. Writer записывает ровно фазы этого прогона, фазы прошлых прогонов не переносятся. Reflection отключена, её флаги не передаются (если фазу 4 включат снова: датированный reflection требует `--reflection-manifest-sha256`, `--reflection-receipt-sha256`, `--reflection-disposition-sha256`, `--reflection-processed-sha256`, `--reflection-signal-count`, а `ready-autonomous-no-eligible-traces` требует `--reflection-noop-sha256`). Затем создать scoped metadata checkpoint truthful post-query state. Состояние второго агента сохраняется. Без этого checkpoint evolution run не считается durable.
+3. Краткий отчёт владельцу: что починено сразу, что ждёт апрува, что отложено.
 
 ## Роли в стеке
 
@@ -236,6 +251,6 @@ Reflection обслуживает ВЕСЬ цикл капсул (скилл и�
 
 ## Как это связано с остальным
 
-- Health-нудж (`health-check.py`) читает `last-run.json` и подсказывает запуск, когда пора. Claude вызывает его SessionStart hook; Codex запускает его по load-bearing правилу в `AGENTS.md`.
-- Плейбук исполняет активный агент. Детерминированная часть вынесена в скрипты, суждение остается за агентом и Владом.
-- Tier-разбивка: Фазы 1-3 = Tier 1/3 (гигиена, низкий риск). Фаза 4 = Tier 2 (обучение, апрув-гейт).
+- Health-нудж (`health-check.py`) молчит, пока не нужно действие: испорчено или не завершено состояние `last-run.json`, сломана Claude memory, индекс памяти не проходит validate. Давность прогона и длина log.md нуджем не являются, оценка поиска идёт в фазе 3. Claude вызывает его SessionStart hook только на `startup`; Codex запускает его по load-bearing правилу в `AGENTS.md`.
+- Плейбук исполняет активный агент. Детерминированная часть вынесена в скрипты, суждение остается за агентом и владельцем.
+- Tier-разбивка: Фазы 1-3 = Tier 1/3 (гигиена, низкий риск). Фаза 4 = Tier 2 (обучение, апрув-гейт), для Claude и Codex отключена по умолчанию.

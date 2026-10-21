@@ -1,51 +1,53 @@
 {
-  "_comment": "Vault OS shell template. The installer replaces {{LANGUAGE}} and merges this into the teammate's ~/.claude/settings.json AFTER backing up the existing file. No tokens, no bypassPermissions, no personal paths.",
+  "_comment": "Vault OS global settings template, matching the owner's working settings minus personal values. installer/install-claude-layer.py backs up ~/.claude/settings.json, then adds only what is missing: top-level keys, and entry by entry the maps enabledPlugins, extraKnownMarketplaces, skillOverrides, modelSettings and env; the hooks come from hooks/hooks.json (filtered per platform). Existing user values always win. No tokens, no personal paths. permissions stays in the safe default mode; --bypass-permissions (asked in the quiz) adds the owner's bypass mode and allow list. Plugins set to false are optional: enable them in /plugin when you need them. skillOverrides decide which skills are off, listed by name only, or reachable only when typed (user-invocable-only).",
   "permissions": {
     "defaultMode": "default"
   },
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Hero.aiff 2>/dev/null; afplay /System/Library/Sounds/Hero.aiff 2>/dev/null || true"
-          }
-        ]
-      }
-    ]
+  "model": "opus[1m]",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "xhigh"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    }
+  },
+  "env": {
+    "ENABLE_CLAUDEAI_MCP_SERVERS": "false"
   },
   "enabledPlugins": {
+    "chrome-devtools-mcp@claude-plugins-official": true,
+    "design-council@sjsyrek": true,
     "figma@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
-    "claude-obsidian@agricidaniel-claude-obsidian": true,
-    "superpowers@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "supabase@claude-plugins-official": true,
-    "playground@claude-plugins-official": true,
-    "github@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true,
-    "chrome-devtools-mcp@claude-plugins-official": true,
-    "vercel@claude-plugins-official": true,
     "obsidian@obsidian-skills": true,
-    "frontend-slides@frontend-slides": true,
-    "document-skills@anthropic-agent-skills": true,
-    "claude-video-vision@claude-video-vision": true,
-    "caveman@caveman": true,
-    "ponytail@ponytail": true,
-    "i-have-adhd@i-have-adhd": true,
-    "hyperframes@hyperframes": true,
-    "last30days@last30days-skill": true,
-    "claude-hud@claude-hud": true,
-    "design-council@sjsyrek": true
+    "playwright@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true,
+    "caveman@caveman": false,
+    "claude-hud@claude-hud": false,
+    "claude-md-management@claude-plugins-official": false,
+    "claude-obsidian@agricidaniel-claude-obsidian": false,
+    "claude-video-vision@claude-video-vision": false,
+    "code-review@claude-plugins-official": false,
+    "code-simplifier@claude-plugins-official": false,
+    "commit-commands@claude-plugins-official": false,
+    "context7@claude-plugins-official": false,
+    "document-skills@anthropic-agent-skills": false,
+    "feature-dev@claude-plugins-official": false,
+    "frontend-slides@frontend-slides": false,
+    "github@claude-plugins-official": false,
+    "last30days@last30days-skill": false,
+    "mintlify@claude-plugins-official": false,
+    "playground@claude-plugins-official": false,
+    "ponytail@ponytail": false,
+    "pr-review-toolkit@claude-plugins-official": false,
+    "skill-creator@claude-plugins-official": false,
+    "supabase@claude-plugins-official": false,
+    "typescript-lsp@claude-plugins-official": false,
+    "understand-anything@understand-anything": false,
+    "unity@unity-agent-plugin": false
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -58,6 +60,12 @@
       "source": {
         "source": "github",
         "repo": "AgriciDaniel/claude-obsidian"
+      }
+    },
+    "understand-anything": {
+      "source": {
+        "source": "github",
+        "repo": "Egonex-AI/Understand-Anything"
       }
     },
     "obsidian-skills": {
@@ -96,18 +104,6 @@
         "repo": "DietrichGebert/ponytail"
       }
     },
-    "i-have-adhd": {
-      "source": {
-        "source": "github",
-        "repo": "ayghri/i-have-adhd"
-      }
-    },
-    "hyperframes": {
-      "source": {
-        "source": "github",
-        "repo": "heygen-com/hyperframes"
-      }
-    },
     "last30days-skill": {
       "source": {
         "source": "github",
@@ -125,11 +121,137 @@
         "source": "github",
         "repo": "sjsyrek/claude-plugins"
       }
+    },
+    "hyperframes": {
+      "source": {
+        "source": "github",
+        "repo": "heygen-com/hyperframes"
+      }
+    },
+    "unity-agent-plugin": {
+      "source": {
+        "source": "github",
+        "repo": "Unity-Technologies/unity-agent-plugin"
+      }
     }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "{{PYTHON}} \"{{CLAUDE_HOME}}/statusline/statusline.py\" --lang {{STATUSLINE_LANG}}"
   },
   "language": "{{LANGUAGE}}",
   "effortLevel": "xhigh",
+  "autoCompactWindow": 300000,
+  "skillListingMaxDescChars": 300,
+  "skillListingBudgetFraction": 0.05,
   "tui": "fullscreen",
   "agentPushNotifEnabled": true,
-  "localPlugins": []
+  "skillOverrides": {
+    "_gstack-command": "user-invocable-only",
+    "anthropic-skills:built-in-browser": "off",
+    "anthropic-skills:computer-use": "off",
+    "anthropic-skills:docs": "off",
+    "anthropic-skills:figma-use": "off",
+    "anthropic-skills:google-workspace": "off",
+    "anthropic-skills:import-memory": "off",
+    "anthropic-skills:morning": "off",
+    "brandkit": "name-only",
+    "design-taste-frontend-v1": "off",
+    "domain-modeling": "name-only",
+    "full-output-enforcement": "name-only",
+    "git-guardrails-claude-code": "name-only",
+    "gpt-taste": "name-only",
+    "graphify": "user-invocable-only",
+    "grilling": "off",
+    "gsap-core": "name-only",
+    "gsap-frameworks": "name-only",
+    "gsap-performance": "name-only",
+    "gsap-plugins": "name-only",
+    "gsap-react": "name-only",
+    "gsap-scrolltrigger": "name-only",
+    "gsap-timeline": "name-only",
+    "gsap-utils": "name-only",
+    "gstack": "user-invocable-only",
+    "gstack-autoplan": "user-invocable-only",
+    "gstack-benchmark": "user-invocable-only",
+    "gstack-benchmark-models": "user-invocable-only",
+    "gstack-browse": "user-invocable-only",
+    "gstack-canary": "user-invocable-only",
+    "gstack-careful": "user-invocable-only",
+    "gstack-codex": "user-invocable-only",
+    "gstack-connect-chrome": "user-invocable-only",
+    "gstack-context-restore": "user-invocable-only",
+    "gstack-context-save": "user-invocable-only",
+    "gstack-cso": "user-invocable-only",
+    "gstack-design-consultation": "user-invocable-only",
+    "gstack-design-html": "user-invocable-only",
+    "gstack-design-review": "user-invocable-only",
+    "gstack-design-shotgun": "user-invocable-only",
+    "gstack-devex-review": "user-invocable-only",
+    "gstack-diagram": "user-invocable-only",
+    "gstack-document-generate": "user-invocable-only",
+    "gstack-document-release": "user-invocable-only",
+    "gstack-freeze": "user-invocable-only",
+    "gstack-guard": "user-invocable-only",
+    "gstack-health": "user-invocable-only",
+    "gstack-investigate": "user-invocable-only",
+    "gstack-ios-clean": "user-invocable-only",
+    "gstack-ios-design-review": "user-invocable-only",
+    "gstack-ios-fix": "user-invocable-only",
+    "gstack-ios-qa": "user-invocable-only",
+    "gstack-ios-sync": "user-invocable-only",
+    "gstack-land-and-deploy": "user-invocable-only",
+    "gstack-landing-report": "user-invocable-only",
+    "gstack-learn": "user-invocable-only",
+    "gstack-make-pdf": "user-invocable-only",
+    "gstack-office-hours": "user-invocable-only",
+    "gstack-open-gstack-browser": "user-invocable-only",
+    "gstack-pair-agent": "user-invocable-only",
+    "gstack-plan-ceo-review": "user-invocable-only",
+    "gstack-plan-design-review": "user-invocable-only",
+    "gstack-plan-devex-review": "user-invocable-only",
+    "gstack-plan-eng-review": "user-invocable-only",
+    "gstack-plan-tune": "user-invocable-only",
+    "gstack-qa": "user-invocable-only",
+    "gstack-qa-only": "user-invocable-only",
+    "gstack-retro": "user-invocable-only",
+    "gstack-review": "user-invocable-only",
+    "gstack-scrape": "user-invocable-only",
+    "gstack-setup-browser-cookies": "user-invocable-only",
+    "gstack-setup-deploy": "user-invocable-only",
+    "gstack-setup-gbrain": "user-invocable-only",
+    "gstack-ship": "user-invocable-only",
+    "gstack-skillify": "user-invocable-only",
+    "gstack-spec": "user-invocable-only",
+    "gstack-sync-gbrain": "user-invocable-only",
+    "gstack-unfreeze": "user-invocable-only",
+    "gstack-upgrade": "user-invocable-only",
+    "handoff": "name-only",
+    "humanizer": "name-only",
+    "image-to-code": "name-only",
+    "imagegen-frontend-mobile": "name-only",
+    "imagegen-frontend-web": "name-only",
+    "industrial-brutalist-ui": "name-only",
+    "markdown-converter": "name-only",
+    "minimalist-ui": "name-only",
+    "pm-skills": "name-only",
+    "prototype": "name-only",
+    "remotion": "name-only",
+    "scrum-master": "name-only",
+    "seedance-20": "name-only",
+    "senior-pm": "name-only",
+    "setup-pre-commit": "name-only",
+    "stitch-design-taste": "name-only",
+    "superpowers:diagnosing-superpowers": "user-invocable-only",
+    "superpowers:finishing-a-development-branch": "off",
+    "superpowers:requesting-code-review": "off",
+    "superpowers:subagent-driven-development": "off",
+    "superpowers:using-git-worktrees": "off",
+    "superpowers:writing-skills": "user-invocable-only",
+    "team-communications": "name-only",
+    "to-prd": "name-only",
+    "vercel-composition-patterns": "name-only",
+    "web-performance-optimization": "name-only",
+    "write-a-skill": "off"
+  }
 }

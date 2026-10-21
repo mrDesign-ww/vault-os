@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """health-check.py — SessionStart-нудж для Vault Evolution.
 
-Запускается хуком при старте сессии (cwd = vault root). Читает last-run.json,
-считает давность + быстрые сигналы (memory orphans, log.md length, retrieval validity).
-Если пороги превышены — печатает нудж в stdout (хук инжектит его в контекст).
-Иначе молчит. Сбой диагностики даёт видимый нудж, но не блокирует старт сессии.
+Запускается хуком при старте сессии (cwd = vault root), цель меньше 3 с. Печатает
+нудж только когда нужно действие: испорчено или не завершено состояние last-run,
+сломана Claude memory, индекс памяти не проходит validate. Иначе молчит.
+Давность evolution и длина log.md не нудж (это уборка, не поломка). Оценка поиска
+(`memory-model.py evaluate`) идёт в прогоне evolution, не здесь. Reflection
+отключена по умолчанию, её состояние здесь не проверяется.
 """
 import datetime
 import importlib.util
@@ -14,6 +16,7 @@ import re
 import stat
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 VAULT = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -26,13 +29,13 @@ PLATFORM = os.environ.get("EVOLUTION_PLATFORM", "claude").strip().lower()
 if PLATFORM not in ("claude", "codex"):
     PLATFORM = "claude"
 
-# Пороги нуджа
-DAYS_THRESHOLD = 7
-LOG_LINES_THRESHOLD = 250
 REQUIRED_PHASES = ("curator_memory", "wiki_hygiene", "retrieval_refresh")
 GATED_PHASES = ("adversarial_gate",)
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 PLACEHOLDER_RE = re.compile(r"\b(?:undefined|null)\b", re.I)
+# A writer (save, build, evolution) holds the shared work lock, and a public
+# validate refuses while it is held or its generation moves.
+LOCK_RACE_MARKERS = ("zone write in progress", "zone changed during")
 REFLECTION_NO_EVIDENCE = {
     "ready-autonomous-awaiting-completion",
     "blocked-delegation-invalid",
@@ -111,15 +114,8 @@ def retrieval_evidence_issue(evidence, completed, schema):
     return None
 
 
-def retrieval_evidence_mismatch(validated, expected):
-    if expected is None:
-        return None
-    for key in ("pages", "chunks", "snapshot_sha256", "loadouts_sha256"):
-        if validated.get(key) != expected.get(key):
-            return "live retrieval differs from durable recovery evidence"
-    return None
-
-
+# Reflection is disabled by default: the two checks below are kept for a
+# possible re-enable but main() no longer calls them.
 def reflection_evidence_issue(evidence, noop_evidence, phase, run_date, schema):
     completed = phase_complete(phase, run_date)
     if phase == "ready-autonomous-no-eligible-traces":
@@ -206,10 +202,9 @@ def reflection_delegation_issue(evidence, noop_evidence, phase, run_date):
             ):
                 raise ValueError("reflection catalog generation is unsafe")
         if os.path.exists(generation_paths["scan_receipt_work"]):
-            if not all(
-                os.path.exists(generation_paths[key])
-                for key in ("completion_work", "manifest_work")
-            ):
+            # A fresh policy generation legitimately holds scan receipts before its own
+            # completion catalog exists (it drains pinned predecessors first).
+            if not os.path.exists(generation_paths["manifest_work"]):
                 raise ValueError("reflection scan catalog is incomplete")
             disposition_module.SELECTOR.read_processed_manifests(
                 generation_paths["scan_receipt_work"],
@@ -292,87 +287,43 @@ def memory_health():
         return None, None, None
 
 
-def l0_l3_health():
+def run_memory_model(arguments, timeout, run=subprocess.run, pause=time.sleep):
+    """Run memory-model.py, once more after a short pause if a lifecycle hook raced it."""
+    for attempt in (1, 2):
+        result = run(
+            [sys.executable, MEMORY_MODEL] + arguments,
+            capture_output=True, text=True, timeout=timeout,
+        )
+        output = (result.stderr or "") + (result.stdout or "")
+        if result.returncode == 0 or attempt == 2 or not any(
+            marker in output for marker in LOCK_RACE_MARKERS
+        ):
+            return result
+        pause(2)
+
+
+def retrieval_health():
+    """One validate: the index matches Markdown. A rebuild since the last evolution is fine."""
     try:
-        result = subprocess.run(
-            [sys.executable, MEMORY_MODEL, "validate", "--zone", "work"],
-            capture_output=True, text=True, timeout=30,
-        )
-        if result.returncode:
-            raise RuntimeError((result.stderr or result.stdout).strip() or "validation failed")
-        data = json.loads(result.stdout)
-        if data.get("valid") is not True:
-            raise ValueError("memory index did not return a valid receipt")
-        return 0
-    except Exception:
-        return None
-
-
-def log_state():
-    path = os.path.join(VAULT, "wiki", "log.md")
-    try:
-        with open(path, encoding="utf-8") as f:
-            lines = list(f)
-        first_entry = next(
-            (i for i, line in enumerate(lines) if line.startswith("## ")),
-            len(lines),
-        )
-        last_fold = next(
-            (i for i, line in enumerate(lines)
-             if line.startswith("## ") and " fold | " in line),
-            None,
-        )
-        since_fold = (
-            len(lines) - first_entry
-            if last_fold is None
-            else max(0, last_fold - first_entry)
-        )
-        return len(lines), since_fold, last_fold is not None
-    except Exception:
-        return None, None, False
-
-
-def retrieval_health(expected_evidence=None):
-    try:
-        result = subprocess.run(
-            [sys.executable, MEMORY_MODEL, "validate", "--zone", "work"],
-            capture_output=True, text=True, timeout=120,
-        )
+        result = run_memory_model(["validate", "--zone", "work"], 30)
         if result.returncode == 0:
-            return retrieval_evidence_mismatch(json.loads(result.stdout), expected_evidence)
+            if json.loads(result.stdout).get("valid") is not True:
+                return "memory index did not return a valid receipt"
+            return None
         detail = (result.stderr or result.stdout).strip().splitlines()
         return detail[-1][:180] if detail else "index validation failed"
     except Exception as error:
         return "index validation unavailable: %s" % str(error)[:120]
 
 
-def retrieval_evaluation_health():
-    try:
-        result = subprocess.run(
-            [sys.executable, MEMORY_MODEL, "evaluate", "--zone", "work"],
-            capture_output=True, text=True, timeout=180,
-        )
-        if result.returncode == 0:
-            return None
-        detail = (result.stderr or result.stdout).strip().splitlines()
-        return detail[-1][:180] if detail else "fixed retrieval evaluation failed"
-    except Exception as error:
-        return "fixed retrieval evaluation unavailable: %s" % str(error)[:120]
-
-
 def main():
     reasons = []
 
-    (
-        days, last, phases, evidence, reflection_evidence,
-        reflection_noop_evidence, notes, state_schema,
-    ) = days_since_last()
+    days, last, phases, evidence, _, _, notes, state_schema = days_since_last()
     if days is None:
         reasons.append("гигиена ещё не запускалась")
     elif days < 0:
         reasons.append("дата последней гигиены находится в будущем: %s" % last)
-    elif days >= DAYS_THRESHOLD:
-        reasons.append("последняя гигиена %d дн. назад" % days)
     if phases is not None and not isinstance(phases, dict):
         reasons.append("состояние обязательных фаз повреждено")
     elif isinstance(phases, dict):
@@ -386,21 +337,6 @@ def main():
     evidence_issue = retrieval_evidence_issue(evidence, completed_refresh, state_schema)
     if evidence_issue:
         reasons.append(evidence_issue)
-    reflection_issue = reflection_evidence_issue(
-        reflection_evidence, reflection_noop_evidence,
-        phases.get("reflection") if isinstance(phases, dict) else None,
-        last,
-        state_schema,
-    )
-    if reflection_issue:
-        reasons.append(reflection_issue)
-    delegation_issue = reflection_delegation_issue(
-        reflection_evidence, reflection_noop_evidence,
-        phases.get("reflection") if isinstance(phases, dict) else None,
-        last,
-    )
-    if delegation_issue:
-        reasons.append(delegation_issue)
     if isinstance(notes, str) and PLACEHOLDER_RE.search(notes):
         reasons.append("run-state notes содержат unresolved placeholder")
 
@@ -418,37 +354,20 @@ def main():
     elif memory_issues:
         reasons.append("Codex memory issues: %d" % memory_issues)
 
-    model_issues = l0_l3_health()
-    if model_issues is None:
-        reasons.append("L0-L3 schema audit недоступен")
-    elif model_issues:
-        reasons.append("L0-L3 schema issues: %d" % model_issues)
-
-    lines, since_fold, has_fold = log_state()
-    if lines is None:
-        reasons.append("log audit недоступен")
-    elif since_fold and since_fold > LOG_LINES_THRESHOLD:
-        if has_fold:
-            reasons.append("log.md: %d строк после последнего fold" % since_fold)
-        else:
-            reasons.append("log.md: %d строк (пора fold)" % lines)
-
-    expected_evidence = evidence if completed_refresh and not evidence_issue else None
-    retrieval_issue = retrieval_health(expected_evidence)
+    retrieval_issue = retrieval_health()
     if retrieval_issue:
-        reasons.append("L0-L3 retrieval недоступен: %s" % retrieval_issue)
-    else:
-        evaluation_issue = retrieval_evaluation_health()
-        if evaluation_issue:
-            reasons.append("L0-L3 retrieval quality gate: %s" % evaluation_issue)
+        reasons.append("индекс памяти не проходит validate: %s" % retrieval_issue)
 
     if not reasons:
         return 0  # тихо
 
-    print("🧹 VAULT EVOLUTION — пора прибраться")
+    print("🧹 VAULT EVOLUTION: нужно действие")
     for r in reasons:
         print("  - %s" % r)
-    print("Запусти: скажи «прогони evolution» (плейбук: .vault-meta/evolution/EVOLUTION.md)")
+    print(
+        "Это сигнал, не задание: скажи владельцу одной строкой и продолжай его задачу. "
+        "Починка по его слову: «прогони evolution»."
+    )
     return 0
 
 
@@ -478,10 +397,6 @@ if __name__ == "__main__":
             assert retrieval_evidence_issue(None, True, 3)
             assert retrieval_evidence_issue(good_evidence, True, True)
             assert retrieval_evidence_issue(good_evidence, True, 2.0)
-            assert retrieval_evidence_mismatch(good_evidence, good_evidence) is None
-            assert retrieval_evidence_mismatch(
-                {**good_evidence, "chunks": 1}, good_evidence,
-            )
             good_reflection = {
                 "manifest_sha256": "c" * 64,
                 "scan_receipt_sha256": "d" * 64,
@@ -510,6 +425,66 @@ if __name__ == "__main__":
             assert reflection_evidence_issue(
                 None, None, "pending-owner-review", "2026-08-20", 3,
             ) == "reflection phase has an unsupported state"
+            calls = []
+
+            def scripted(*outcomes):
+                queue = list(outcomes)
+
+                def run(arguments, **_):
+                    calls.append(arguments)
+                    code, error = queue.pop(0)
+                    return type("Result", (), {"returncode": code, "stderr": error, "stdout": ""})()
+                return run
+
+            race = "ERR: zone write in progress; retry retrieval after the writer releases its lock"
+            moved = "ERR: zone changed during validation; retry"
+            for outcomes, code, attempts in (
+                (((1, race), (0, "")), 0, 2),
+                (((1, moved), (1, moved)), 1, 2),
+                (((1, "ERR: evaluations failed: x hash=drift"),), 1, 1),
+                (((0, ""),), 0, 1),
+            ):
+                calls.clear()
+                result = run_memory_model(
+                    ["evaluate"], 1, run=scripted(*outcomes), pause=lambda seconds: None,
+                )
+                assert result.returncode == code and len(calls) == attempts, outcomes
+            import tempfile
+            # SessionStart: one validate, no evaluate, silent unless action is needed.
+            # Old run date, leftover reflection state and an index rebuilt since the
+            # last evolution are not actions.
+            import contextlib
+            import io
+            with tempfile.TemporaryDirectory() as scratch:
+                state = os.path.join(scratch, "last-run.json")
+                phases = dict.fromkeys(REQUIRED_PHASES, "2026-01-01")
+                phases["reflection"] = "ready-autonomous-no-eligible-traces"
+                with open(state, "w") as handle:
+                    json.dump({"platforms": {PLATFORM: {
+                        "last_run": "2026-01-01", "state_schema_version": 4,
+                        "phases": phases, "retrieval_evidence": good_evidence,
+                    }}}, handle)
+                saved = {
+                    name: globals()[name]
+                    for name in ("LAST_RUN", "memory_health", "run_memory_model")
+                }
+                globals().update(LAST_RUN=state, memory_health=lambda: (0, 0, 0))
+                try:
+                    for code, expect_nudge in ((0, False), (1, True)):
+                        rebuilt = json.dumps({"valid": True, **good_evidence, "chunks": 1})
+                        globals()["run_memory_model"] = lambda arguments, *_a, **_k: (
+                            calls.append(arguments) or type("Result", (), {
+                                "returncode": code, "stderr": "ERR: stale", "stdout": rebuilt,
+                            })()
+                        )
+                        calls.clear()
+                        out = io.StringIO()
+                        with contextlib.redirect_stdout(out):
+                            main()
+                        assert bool(out.getvalue()) == expect_nudge, out.getvalue()
+                        assert [arguments[0] for arguments in calls] == ["validate"], calls
+                finally:
+                    globals().update(saved)
             print("health-check self-test: PASS")
             sys.exit(0)
         sys.exit(main())

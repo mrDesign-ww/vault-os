@@ -11,7 +11,14 @@
 # it is machine- and content-specific and regenerates via Codex's trust prompt when
 # the teammate first opens the vault.
 
-# Keep the user's current model, reasoning effort, and service tier.
+# Model defaults, the owner's values. installer/install-codex-layer.py adds a top-level key only when the user's
+# config has none, so an existing model, effort or service tier always wins.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "xhigh"
+service_tier = "default"
+
+[features]
+js_repl = false
 
 # --- Marketplaces (public git sources; Codex clones and caches them) ---------
 # The public claude-obsidian plugin gives Codex the same wiki skills, commands,
@@ -31,10 +38,6 @@ source = "https://github.com/anthropics/claude-plugins-official.git"
 source_type = "git"
 source = "https://github.com/DietrichGebert/ponytail.git"
 
-[marketplaces.i-have-adhd]
-source_type = "git"
-source = "https://github.com/ayghri/i-have-adhd.git"
-
 [marketplaces.hyperframes]
 source_type = "git"
 source = "https://github.com/heygen-com/hyperframes.git"
@@ -42,6 +45,10 @@ source = "https://github.com/heygen-com/hyperframes.git"
 [marketplaces.last30days-skill]
 source_type = "git"
 source = "https://github.com/mvanhorn/last30days-skill.git"
+
+[marketplaces.unity-agent-plugin]
+source_type = "git"
+source = "https://github.com/Unity-Technologies/unity-agent-plugin.git"
 
 # --- Plugins (mirror of the Claude side; enable/disable to taste) ------------
 [plugins."claude-obsidian@agricidaniel-claude-obsidian"]
@@ -107,14 +114,55 @@ enabled = true
 [plugins."ponytail@ponytail"]
 enabled = true
 
-[plugins."i-have-adhd@i-have-adhd"]
-enabled = true
-
 [plugins."hyperframes@hyperframes"]
 enabled = true
 
 [plugins."last30days@last30days-skill"]
 enabled = true
+
+[plugins."unity@unity-agent-plugin"]
+enabled = true
+
+# Plugins that ship inside the Codex app (its bundled and primary-runtime marketplaces; the app supplies their
+# local sources, so no marketplace block is needed here). Enabled as on the owner's machine.
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."codex-app-tools@openai-bundled"]
+enabled = true
+
+[plugins."unified-computer-use@openai-bundled"]
+enabled = true
+
+[plugins."code-review@openai-bundled"]
+enabled = true
+
+[plugins."playwright@claude-plugins-official".mcp_servers.playwright.tools.browser_resize]
+approval_mode = "approve"
 
 # The vault's AGENTS.md (Codex mirror of CLAUDE.md) supplies the operating rules.
 # On first open of the vault, Codex will prompt to trust the project, the plugin
@@ -122,15 +170,13 @@ enabled = true
 
 # --- Optional MCP servers ----------------------------------------------------
 # Codex reads MCP servers from this file. None ships enabled: each one is the
-# teammate's own account and network boundary. Uncomment what is wanted, then
-# authenticate with a personal account on first use.
-#
-# [mcp_servers.higgsfield]
-# url = "https://mcp.higgsfield.ai/mcp"
+# teammate's own account and network boundary. installer/install-codex-layer.py
+# --mcp higgsfield adds a URL-only block from shell/claude/mcp-servers.json (the
+# owner runs higgsfield here); sign in with a personal account on first use.
 
 # --- Skills ------------------------------------------------------------------
-# Codex does not read ~/.claude/skills. To give it the same toolkit, copy
-# shell/claude/skills/ into BOTH ~/.codex/skills/ and ~/.agents/skills/ (the
-# second path is what the bundled impeccable design hook in hooks.template.json
-# looks for). Skills that ship a Codex variant carry it in their own agents/
+# Codex does not read ~/.claude/skills. To give it the same toolkit, run
+# installer/install-claude-layer.py with --extra-skills-dir ~/.codex/skills and
+# --extra-skills-dir ~/.agents/skills (the second path is what the bundled
+# impeccable design hook in hooks.template.json looks for). Skills that ship a Codex variant carry it in their own agents/
 # folder; nothing else changes between the two copies.

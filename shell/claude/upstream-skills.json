@@ -1,0 +1,31 @@
+{
+  "_comment": "Skills that are installed from their upstream source instead of being bundled (licence or size). installer/install-claude-layer.py --upstream-skills clones each repo at the pinned commit. kind 'folder' copies one folder into skills/<name>; kind 'setup' clones into skills/<name> and runs the upstream setup with the listed arguments (it registers its own hooks and per-skill folders). 'hosts' (only with the Codex integration): a setup kind runs hosts.codex.setup from the same checkout, so gstack also serves Codex (~/.codex/skills/gstack and its gstack-* links); a folder kind is also placed in ~/.agents/skills/<hosts.agents.name>. The visibility of every skill (off, name-only, user-invocable-only) comes from skillOverrides in settings.template.json.",
+  "skills": [
+    {
+      "name": "gstack",
+      "kind": "setup",
+      "repo": "https://github.com/garrytan/gstack.git",
+      "commit": "cb9ccf2e8044f2650a47f976e878ee567d8fb114",
+      "version": "1.91.158.0",
+      "licence": "MIT",
+      "requires": ["git", "bun"],
+      "platforms": ["darwin", "linux"],
+      "setup": ["./setup", "--host", "claude", "--prefix", "--plan-tune-hooks", "--no-timeline-stop-hook", "--quiet"],
+      "config": {"skill_prefix": "true", "auto_upgrade": "false", "team_mode": "false"},
+      "hosts": {"codex": {"setup": ["./setup", "--host", "codex", "--prefix", "--plan-tune-hooks", "--no-timeline-stop-hook", "--quiet"]}},
+      "note": "about 60 /gstack-* skills plus the AskUserQuestion hooks (question-log, auq-error-fallback, question-preference); Windows: run setup.ps1 by hand"
+    },
+    {
+      "name": "remotion",
+      "kind": "folder",
+      "repo": "https://github.com/remotion-dev/skills.git",
+      "commit": "6726bf2d4bcce0359806749b3656b0c886d74aaa",
+      "path": "skills/remotion",
+      "hosts": {"agents": {"name": "remotion-best-practices"}},
+      "licence": "none declared upstream: installed from the source, not redistributed",
+      "requires": ["git"],
+      "platforms": ["darwin", "linux", "win32"],
+      "note": "Remotion best practices (skill name remotion-best-practices, folder remotion)"
+    }
+  ]
+}

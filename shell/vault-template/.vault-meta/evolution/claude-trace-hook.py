@@ -5,8 +5,10 @@ import argparse
 import datetime
 import hashlib
 import importlib.util
+import io
 import json
 import os
+import signal
 import re
 import stat
 import subprocess
@@ -85,7 +87,9 @@ def read_hook_input(stream):
         raise ValueError("hook-input")
     if not isinstance(value.get("session_id"), str) or not value["session_id"]:
         raise ValueError("hook-session")
-    if os.path.realpath(str(value.get("cwd", ""))) != str(VAULT):
+    # A session whose shell sits in a vault subfolder is still this vault's session.
+    cwd = Path(os.path.realpath(str(value.get("cwd", ""))))
+    if cwd != VAULT and VAULT not in cwd.parents:
         raise ValueError("hook-vault")
     return value
 
@@ -153,7 +157,7 @@ def structural_offsets(raw):
         message = item.get("message") if isinstance(item, dict) else None
         role = message.get("role") if isinstance(message, dict) else None
         if item.get("type") == "user" and role == "user":
-            kind, _ = POLICY.claude_user_message(message)
+            kind, _ = POLICY.claude_user_message(message, meta=item.get("isMeta") is True)
             if kind == "invalid":
                 raise ValueError("transcript-user-shape")
             if kind == "prompt":
@@ -792,10 +796,10 @@ def register_prompt(
                 previous_path, previous, policy, policy_sha, hook_sha,
                 completion_root, path, start, now=instant,
             )
-        except SegmentAmbiguity:
+        except SegmentAmbiguity as error:
             retire_open_state(
                 previous_path, previous, policy_sha, hook_sha,
-                "ambiguous-next-prompt-segment",
+                retirement_reason(error, "ambiguous-next-prompt-segment"),
             )
     sequence = ledger["prompt_sequence"] + 1
     turn_id = hashlib.sha256(
@@ -849,9 +853,18 @@ def register_prompt(
     return state_path, True
 
 
-def completed_shape(segment, prompt_sha):
+def segment_shape(segment, prompt_sha):
+    """Classify one registered turn segment.
+
+    "completed": exactly the registered human prompt, answered by the assistant.
+    "harness-prompt": the registered prompt is itself a harness envelope (for
+    example a task notification), recognised by its exact hash and answered by the
+    assistant; it carries no human text and is retired without a receipt.
+    "ambiguous": anything else.
+    """
     user_hashes = []
-    assistant_after_user = False
+    harness_prompt = False
+    assistant_after_prompt = False
     for line in segment.splitlines(keepends=True):
         try:
             item = json.loads(line)
@@ -860,15 +873,43 @@ def completed_shape(segment, prompt_sha):
         message = item.get("message") if isinstance(item, dict) else None
         role = message.get("role") if isinstance(message, dict) else None
         if item.get("type") == "user" and role == "user":
-            kind, text = POLICY.claude_user_message(message)
+            kind, text = POLICY.claude_user_message(message, meta=item.get("isMeta") is True)
             if kind == "invalid":
                 raise SegmentAmbiguity("segment-prompt-shape")
             if kind == "continuation":
+                if POLICY.claude_user_envelope_sha256(message) == prompt_sha:
+                    harness_prompt = True
                 continue
             user_hashes.append(hashlib.sha256(text.encode("utf-8")).hexdigest())
-        elif item.get("type") == "assistant" and role == "assistant" and user_hashes:
-            assistant_after_user = True
-    return user_hashes == [prompt_sha] and assistant_after_user
+        elif item.get("type") == "assistant" and role == "assistant" and (user_hashes or harness_prompt):
+            assistant_after_prompt = True
+    if user_hashes == [prompt_sha] and assistant_after_prompt:
+        return "completed"
+    if not user_hashes and harness_prompt and assistant_after_prompt:
+        return "harness-prompt"
+    return "ambiguous"
+
+
+def retirement_reason(error, default):
+    """Keep the precise harness-prompt reason; every other ambiguity keeps the caller's."""
+    return "harness-prompt" if str(error) == "harness-prompt" else default
+
+
+def close_or_retire_harness(
+    state_path, state, policy, policy_sha, hook_sha, completion_root,
+    raw, metadata, end, terminal_reason, recorded_by, now=None,
+):
+    """Prepare a close, or retire a harness-prompt turn quietly instead of failing."""
+    try:
+        return prepare_close(
+            state_path, state, policy, policy_sha, hook_sha, completion_root,
+            raw, metadata, end, terminal_reason, recorded_by, now=now,
+        )
+    except SegmentAmbiguity as error:
+        if str(error) != "harness-prompt":
+            raise
+        retire_open_state(state_path, state, policy_sha, hook_sha, "harness-prompt")
+        return None
 
 
 def prepare_close(
@@ -879,7 +920,10 @@ def prepare_close(
     if metadata is None or start < 0 or end <= start or end > len(raw):
         raise SegmentAmbiguity("segment-range")
     segment = raw[start:end]
-    if not completed_shape(segment, state["prompt_sha256"]):
+    shape = segment_shape(segment, state["prompt_sha256"])
+    if shape == "harness-prompt":
+        raise SegmentAmbiguity("harness-prompt")
+    if shape != "completed":
         raise SegmentAmbiguity("segment-not-completed")
     instant = now or utc_now()
     transitions = state["zone_transitions"]
@@ -984,9 +1028,7 @@ def closed_stop_retry(
         start, end = receipt["segment_start"], receipt["segment_end"]
         if (
             end == len(raw)
-            and receipt["trace_identity"] == {
-                "device": metadata.st_dev, "inode": metadata.st_ino,
-            }
+            and receipt["trace_identity"]["inode"] == metadata.st_ino
             and hashlib.sha256(raw[start:end]).hexdigest()
             == receipt["segment_sha256"]
         ):
@@ -1029,7 +1071,7 @@ def close_stop(value, policy, policy_sha, hook_sha, open_root, completion_root, 
     if path.relative_to(root).as_posix() != state["trace_relative"]:
         raise ValueError("transcript-mismatch")
     raw, metadata = read_transcript(path)
-    return prepare_close(
+    return close_or_retire_harness(
         state_path, state, policy, policy_sha, hook_sha, completion_root,
         raw, metadata, len(raw), "stop-hook", "claude:stop-hook", now=now,
     )
@@ -1111,7 +1153,7 @@ def close_stop_across_generations(
     if path.relative_to(root).as_posix() != state["trace_relative"]:
         raise ValueError("transcript-mismatch")
     raw, metadata = read_transcript(path)
-    return prepare_close(
+    return close_or_retire_harness(
         state_path, state, policy, policy_sha, hook_sha, completion_root,
         raw, metadata, len(raw), "stop-hook", "claude:stop-hook", now=now,
     )
@@ -1198,10 +1240,10 @@ def close_prior_generation_before_prompt(
                 state_path, state, policy, policy_sha, hook_sha,
                 completion_root, path, boundary, now=now,
             )
-        except SegmentAmbiguity:
+        except SegmentAmbiguity as error:
             retire_open_state(
                 state_path, state, policy_sha, hook_sha,
-                "ambiguous-prior-generation-segment",
+                retirement_reason(error, "ambiguous-prior-generation-segment"),
             )
 
 
@@ -1347,23 +1389,145 @@ def switch_open_across_generations(
 
 def self_test():
     assert HOOK_LOCK_TTL_SECONDS >= 60
+    notice = "<task-notification>\n<task-id>t-1</task-id>"
+    notice_sha = hashlib.sha256(notice.encode("utf-8")).hexdigest()
+    harness_segment = b"".join(
+        json.dumps(item, ensure_ascii=False).encode("utf-8") + b"\n" for item in (
+            {"type": "user", "message": {"role": "user", "content": notice}},
+            {"type": "assistant", "message": {"role": "assistant", "content": "ok"}},
+        )
+    )
+    assert segment_shape(harness_segment, notice_sha) == "harness-prompt"
+    assert segment_shape(harness_segment, "0" * 64) == "ambiguous"
+    human_segment = b"".join(
+        json.dumps(item, ensure_ascii=False).encode("utf-8") + b"\n" for item in (
+            {"type": "user", "message": {"role": "user", "content": "вопрос"}},
+            {"type": "assistant", "message": {"role": "assistant", "content": "ok"}},
+        )
+    )
+    human_sha = hashlib.sha256("вопрос".encode("utf-8")).hexdigest()
+    assert segment_shape(human_segment, human_sha) == "completed"
+    assert segment_shape(harness_segment + human_segment, human_sha) == "completed"
+    assert segment_shape(human_segment[:1], human_sha) == "ambiguous"
+
+    def segment(*items):
+        return b"".join(
+            json.dumps(item, ensure_ascii=False).encode("utf-8") + b"\n" for item in items
+        )
+
+    question = {"type": "user", "message": {"role": "user", "content": "вопрос"}}
+    answer = {"type": "assistant", "message": {"role": "assistant", "content": "ok"}}
+    # The harness's own marked messages (isMeta) and command envelopes are never a human prompt.
+    harness_marked = [
+        {"type": "user", "isMeta": True, "message": {"role": "user", "content": [
+            {"type": "text", "text": "[Image: source: /private/tmp/shot.png]"}]}},
+        {"type": "user", "isMeta": True, "message": {"role": "user", "content": [
+            {"type": "text", "text": "[Image: original 3024x1902, displayed at 2000x1258.]"}]}},
+        {"type": "user", "isMeta": True, "message": {
+            "role": "user", "content": "Another Claude session sent a message: не так"}},
+        {"type": "user", "isMeta": True, "message": {
+            "role": "user", "content": "Your claude.ai usage limit has reset."}},
+        {"type": "user", "isMeta": True, "message": {
+            "role": "user", "content": "<local-command-caveat>Caveat: local</local-command-caveat>"}},
+        {"type": "user", "message": {"role": "user", "content": "<command-name>/model</command-name>"}},
+        {"type": "user", "message": {"role": "user", "content": (
+            "<command-message>save</command-message>\n<command-name>/save</command-name>")}},
+        {"type": "user", "message": {
+            "role": "user", "content": "<local-command-stdout>Set model</local-command-stdout>"}},
+    ]
+    for marked in harness_marked:
+        assert segment_shape(segment(question, marked, answer), human_sha) == "completed", marked
+        assert segment_shape(segment(marked, question, answer), human_sha) == "completed", marked
+        assert segment_shape(segment(marked, answer), "0" * 64) == "ambiguous", marked
+    notice_text = "Another Claude session sent a message: не так"
+    assert segment_shape(
+        segment(harness_marked[2], answer),
+        hashlib.sha256(notice_text.encode("utf-8")).hexdigest(),
+    ) == "harness-prompt"
+    image_prompt = {"type": "user", "message": {"role": "user", "content": [
+        {"type": "text", "text": "[Image #1] вопрос"},
+        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AA=="}},
+    ]}}
+    image_sha = hashlib.sha256("[Image #1] вопрос".encode("utf-8")).hexdigest()
+    assert segment_shape(
+        segment(image_prompt, harness_marked[0], harness_marked[1], answer), image_sha,
+    ) == "completed"
+    unmarked = {"type": "user", "message": {"role": "user", "content": notice_text}}
+    assert segment_shape(segment(question, unmarked, answer), human_sha) == "ambiguous"
+    # Registration anchors on the human prompt, not on the harness note written after it.
+    assert structural_offsets(segment(answer, image_prompt, harness_marked[0]))[0] == len(
+        segment(answer)
+    )
+
+    def hook_input(cwd):
+        payload = json.dumps({"session_id": "s", "cwd": cwd}).encode("utf-8")
+        return read_hook_input(type("Stream", (), {"buffer": io.BytesIO(payload)})())
+
+    for inside in (VAULT, VAULT / "wiki", VAULT / "wiki" / "workspace" / "projects"):
+        assert hook_input(str(inside))["cwd"] == str(inside)
+    for outside in (VAULT.parent, Path(str(VAULT) + "2"), Path("/")):
+        try:
+            hook_input(str(outside))
+        except ValueError as error:
+            assert str(error) == "hook-vault"
+        else:
+            raise AssertionError("hook input outside the vault was accepted: %s" % outside)
+    assert retirement_reason(SegmentAmbiguity("harness-prompt"), "x") == "harness-prompt"
+    assert retirement_reason(SegmentAmbiguity("segment-not-completed"), "x") == "x"
+    with tempfile.TemporaryDirectory(prefix="claude-harness-retire-test-") as directory:
+        directory = os.path.realpath(directory)
+        state_root = POLICY.ensure_private_directory(Path(directory) / "gen" / "claude")
+        state_path = state_root / "claude-test-state.json"
+        state = {
+            "status": "open", "session_key": "s" * 64, "turn_id": "t" * 64,
+            "trace_relative": "test.jsonl", "start_offset": 0, "prompt_sha256": notice_sha,
+            "pending_receipt": None, "closure_receipt_sha256": None,
+            "zone_transitions": [], "initial_zone": "work",
+            "task_started_at": "2026-09-22T00:00:00Z",
+        }
+        atomic_state_write(state_path, state)
+        completion_root = Path(directory) / "completions"
+        try:
+            close_or_retire_harness(
+                state_path, state, {}, "p" * 64, "h" * 64, completion_root,
+                harness_segment, object(), 0, "stop-hook", "claude:stop-hook",
+            )
+        except SegmentAmbiguity as error:
+            assert str(error) == "segment-range"
+        else:
+            raise AssertionError("an operational segment ambiguity was retired quietly")
+        assert json.loads(state_path.read_text(encoding="utf-8"))["status"] == "open"
+        assert close_or_retire_harness(
+            state_path, state, {}, "p" * 64, "h" * 64, completion_root,
+            harness_segment, object(), len(harness_segment), "stop-hook", "claude:stop-hook",
+        ) is None
+        retired = json.loads(state_path.read_text(encoding="utf-8"))
+        assert retired["status"] == "closed" and retired["closure_receipt_sha256"] is None
+        retirements = [
+            path for path in (state_root / ".recovery").iterdir()
+            if not path.name.startswith(".")
+        ]
+        assert len(retirements) == 1
+        assert json.loads(retirements[0].read_text(encoding="utf-8"))["reason_code"] == "harness-prompt"
     settings_raw, _ = POLICY.read_regular_bytes(
         VAULT / ".claude/settings.json", "Claude settings",
     )
     settings = POLICY.strict_json_loads(settings_raw, "Claude settings")
-    stop_command = settings["hooks"]["Stop"][0]["hooks"][0]["command"]
-    assert "|| true" not in stop_command
-    with tempfile.TemporaryDirectory(prefix="claude-stop-hook-test-") as directory:
-        project = Path(directory)
-        hook = project / ".vault-meta/evolution/claude-trace-hook.py"
-        hook.parent.mkdir(parents=True)
-        hook.write_text("raise SystemExit(2)\n", encoding="utf-8")
-        result = subprocess.run(
-            ["/bin/sh", "-c", stop_command],
-            env={**os.environ, "CLAUDE_PROJECT_DIR": str(project)},
-            capture_output=True, text=True,
-        )
-        assert result.returncode == 2
+    stop_groups = settings["hooks"].get("Stop")
+    if stop_groups:
+        stop_command = stop_groups[0]["hooks"][0]["command"]
+        assert "|| true" not in stop_command
+        with tempfile.TemporaryDirectory(prefix="claude-stop-hook-test-") as directory:
+            project = Path(directory)
+            hook = project / ".vault-meta/evolution/claude-trace-hook.py"
+            hook.parent.mkdir(parents=True)
+            hook.write_text("raise SystemExit(2)\n", encoding="utf-8")
+            result = subprocess.run(
+                ["/bin/sh", "-c", stop_command],
+                env={**os.environ, "CLAUDE_PROJECT_DIR": str(project)},
+                capture_output=True, text=True,
+            )
+            assert result.returncode == 2
     with tempfile.TemporaryDirectory(prefix="claude-trace-hook-test-") as directory:
         root = Path(os.path.realpath(directory))
         trace_root = root / "projects"
@@ -2329,9 +2493,14 @@ def report_degraded(command, message):
     return 0
 
 
+def terminate_hook(*_):
+    raise SystemExit(143)
+
+
 def hook_main(command):
     token = None
     route = None
+    signal.signal(signal.SIGTERM, terminate_hook)
     try:
         value = read_hook_input(sys.stdin)
         if value.get("hook_event_name") != ("UserPromptSubmit" if command == "prompt-start" else "Stop"):
