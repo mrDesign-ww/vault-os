@@ -24,6 +24,7 @@ CANVAS_EXT = ".canvas"
 INBOX = "wiki/workspace/projects/inbox"
 PERSONAL_INBOX = "wiki/personal/inbox"
 SYSTEM_PATH_REASON = "personal file at a system path"
+SPECIAL_REASON = "special file (FIFO, socket or device)"
 LINK_REASON = "symbolic link at a system path"
 FILE_REASON = "file where the system needs a folder"
 FOLDER_REASON = "folder where the system keeps a file"
@@ -133,6 +134,9 @@ def scan(vault, system_paths, kept=None, fold_case=False, held=()):
             if os.path.islink(os.path.join(current, name)):
                 kept[rel] = {"reason": "symbolic link", "files": [rel]}
                 continue
+            if not fsx.is_regular(os.path.join(current, name)):
+                kept[rel] = {"reason": SPECIAL_REASON, "files": [rel]}
+                continue
             if (rel.lower() if fold_case else rel) in held:
                 kept[rel] = {"reason": HELD_REASON, "files": [rel]}
                 continue
@@ -152,6 +156,8 @@ def repo_files(vault, rel_dir):
 
 
 def read_text(path):
+    if not fsx.is_regular(path):
+        raise OSError("%s is not a regular file (FIFO, socket or device): it is not read" % path)
     with open(path, "rb") as handle:
         return handle.read().decode("utf-8", "surrogateescape")
 
@@ -315,6 +321,54 @@ def resolve(kind, parts, src, layout):
     if kind == "md":
         return resolve_md(parts["dest"], src, layout)
     return layout.exists(parts["path"])
+
+
+def link_candidates(kind, parts, src):
+    """The vault paths a link would try, as (path, relative to the note) pairs, in the order resolve tries them."""
+    if kind == "canvas":
+        return [(clean(parts["path"]), False)]
+    out = []
+    if kind == "wiki":
+        t = parts["target"].strip().replace("\\", "/")
+        for cand in (t + NOTE_EXT, t) if t else ():
+            if "/" in cand:
+                out += [(clean(posixpath.join(base, cand)), bool(base)) for base in ("", posixpath.dirname(src))]
+        return out
+    raw = parts["dest"][1:-1] if parts["dest"].startswith("<") and parts["dest"].endswith(">") else parts["dest"]
+    path = unquote(raw.split("#", 1)[0])
+    if SCHEME.match(raw) or raw.startswith("#") or not path:
+        return []
+    src_dir = posixpath.dirname(src)
+    for cand in (path, path + NOTE_EXT):
+        out += [(clean(posixpath.join(base, cand.lstrip("/") if base == "" else cand)), base != "" or not src_dir)
+                for base in (src_dir, "")]
+    return out
+
+
+def rebase_through_link(kind, parts, src, new_src, folder_links):
+    """A link that goes through a symbolic link, by path, only the path string is rebased (the link's target is never
+    listed or read): the link's old prefix becomes its final path, and the text is measured from the note's new place.
+    folder_links is {old path: final path}. Returns the new link text, or None when nothing needs to change."""
+    for rel, relative in link_candidates(kind, parts, src):
+        if not rel:
+            continue
+        for old, final in folder_links.items():
+            if not rel.lower().startswith(old.lower() + "/"):
+                continue
+            new_rel = final + rel[len(old):]
+            if new_rel == rel and (not relative or posixpath.dirname(new_src) == posixpath.dirname(src)):
+                return None
+            if kind == "md":
+                return rewrite_link("md", parts, new_src, new_rel, None)
+            if kind == "canvas":
+                return json.dumps(new_rel, ensure_ascii=False)
+            is_note = rel.lower().endswith(NOTE_EXT) and not parts["target"].lower().endswith(NOTE_EXT)
+            target = new_rel[:-len(NOTE_EXT)] if is_note else new_rel
+            alias, sep = parts["alias"], parts["sep"]
+            if alias is None and not parts["embed"] and target != parts["target"]:
+                alias, sep = parts["target"], sep or "|"
+            return "%s[[%s%s%s]]" % (parts["embed"], target, parts["anchor"], "" if alias is None else sep + alias)
+    return None
 
 
 def rewrite_link(kind, parts, new_src, new_target, layout):
@@ -580,12 +634,19 @@ def plan(vault, system_paths, reserved_paths=(), maps=(), displaced=(), inbox=IN
     final = {rel: moves.get(rel, rel) for rel in files}
     new = Layout(list(final.values()) + new_extra)
     rewrites = {}
+    folder_links = {rel: moves.get(rel, rel) for rel in sorted(set(kept) | set(link_set))
+                    if os.path.islink(os.path.join(vault, *rel.split("/")))}
     for rel, text in texts.items():
         new_src = final[rel]
         edits = []
         for start, end, kind, parts in links_of(rel, text):
             target = resolve(kind, parts, rel, old)
             if target is None:
+                # A link by path into a symbolic link to a folder: the layout holds no path below it, so only the
+                # path string is rebased.
+                replacement = rebase_through_link(kind, parts, rel, new_src, folder_links) if folder_links else None
+                if replacement and replacement != text[start:end]:
+                    edits.append([start, text[start:end], replacement])
                 continue
             want = final.get(target, target)
             if resolve(kind, parts, new_src, new) == want:

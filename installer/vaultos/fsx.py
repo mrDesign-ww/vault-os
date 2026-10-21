@@ -33,7 +33,17 @@ def sha256_value(value):
     return sha256_text(canonical_json(value))
 
 
+def is_regular(path):
+    """True for a regular file (a link to one counts). A FIFO, socket or device is never opened: reading it blocks."""
+    try:
+        return stat.S_ISREG(os.stat(path).st_mode)
+    except OSError:
+        return False
+
+
 def sha256_file(path):
+    if not is_regular(path):
+        raise OSError("%s is not a regular file (FIFO, socket or device): it is not read" % path)
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
         for block in iter(lambda: handle.read(1 << 20), b""):
@@ -53,8 +63,8 @@ LINK_SHAPES = ("link to file", "link to folder", "dangling link", "link chain")
 
 
 def shape(path):
-    """What lstat finds at path (the path-shape preflight, UPGRADE.md 5.1): absent, folder, file, or one of
-    LINK_SHAPES. A link is looked at only to name its kind; nothing is read through it."""
+    """What lstat finds at path (the path-shape preflight, UPGRADE.md 5.1): absent, folder, file, special (a FIFO,
+    socket or device), or one of LINK_SHAPES. A link is looked at only to name its kind; nothing is read through it."""
     try:
         info = os.lstat(path)
     except (FileNotFoundError, NotADirectoryError):
@@ -65,7 +75,9 @@ def shape(path):
         if not os.path.exists(path):
             return "dangling link"
         return "link to folder" if os.path.isdir(path) else "link to file"
-    return "folder" if stat.S_ISDIR(info.st_mode) else "file"
+    if stat.S_ISDIR(info.st_mode):
+        return "folder"
+    return "file" if stat.S_ISREG(info.st_mode) else "special"
 
 
 def walk_entries(root):
@@ -87,6 +99,8 @@ def tree_lines(root):
     for rel, path in walk_entries(root):
         if os.path.islink(path):
             lines.append("%s\0link\0%s" % (rel, os.readlink(path)))
+        elif not is_regular(path):
+            lines.append("%s\0special\0" % rel)
         else:
             lines.append("%s\0%s\0%s" % (rel, "x" if is_exec(path) else "-", sha256_file(path)))
     return lines
@@ -106,6 +120,8 @@ def entry_state(path):
     if os.path.isdir(path):
         digest, count = tree_sha(path)
         return {"type": "tree", "sha256": digest, "files": count}
+    if not is_regular(path):
+        return {"type": "special"}
     return {"type": "file", "sha256": sha256_file(path), "exec": is_exec(path)}
 
 
@@ -241,6 +257,8 @@ def snapshot(root, exclude=()):
             path = os.path.join(current, name)
             if os.path.islink(path):
                 out[rel] = ("link", os.readlink(path))
+            elif not is_regular(path):
+                out[rel] = ("special", stat.S_IMODE(os.lstat(path).st_mode))
             else:
                 out[rel] = ("file", stat.S_IMODE(os.lstat(path).st_mode), sha256_file(path))
     return out

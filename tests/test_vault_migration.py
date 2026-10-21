@@ -271,6 +271,24 @@ class MigrationSafetyTest(Base):
         self.assertIn("Notes/real.md", moved)
         self.assertTrue(any("Notes/alias.md" in w for w in plan["warnings"]), plan["warnings"])
 
+    def test_note_links_through_a_folder_link_are_rebased_by_path(self):
+        make_vault(self.vault, {"Home.md": "[[Reference/Book]] [b](Reference/Book.md) [i](Shelf/Item.md) "
+                                           "[w](<Shelf/Item.md#top>)\n",
+                                "Notes/Sub.md": "[[Shelf/Item]] [x](../Shelf/Item.md)\n"})
+        os.symlink(str(self.tmp / "outside-ref"), str(self.vault / "Reference"))
+        os.symlink(str(self.tmp / "outside-shelf"), str(self.vault / "Shelf"))
+        plan = migrate.plan(str(self.vault), set(), {"Reference/_index.md"}, (), links=["Reference"])
+        moves = self.moves(plan)
+        self.assertEqual(moves["Reference"], "Reference (2)")
+        self.assertEqual(moves["Home.md"], migrate.INBOX + "/Home.md")
+        new = {rel: [e[2] for e in edits] for rel, edits in plan["rewrites"].items()}
+        self.assertEqual(new["Home.md"], ["[[Reference (2)/Book|Reference/Book]]", "[b](../../../../Reference%20%282%29/Book.md)",
+                                          "[i](../../../../Shelf/Item.md)", "[w](<../../../../Shelf/Item.md#top>)"])
+        self.assertEqual(new["Notes/Sub.md"], ["[x](../../../../../Shelf/Item.md)"], "a vault-path wiki link still reaches")
+        self.assertEqual(self.moves(plan)["Notes/Sub.md"], migrate.INBOX + "/Notes/Sub.md")
+        self.assertEqual(plan["warnings"], [])
+        self.assertFalse(os.path.exists(str(self.tmp / "outside-ref")), "the link target is never touched")
+
     def test_a_folder_with_its_own_git_repository_is_one_unit(self):
         make_vault(self.vault, {"Code/proj/README.md": "# proj\nsee [plan](../../Notes/Plan.md)\n", "Code/proj/main.py": "x\n",
                                 "Notes/Plan.md": "# plan\n[[README]]\n"})

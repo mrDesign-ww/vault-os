@@ -156,8 +156,10 @@ def run(a, opts, homes):
                           % (plan["id"], " --approve-memory-policy" if plan["approval_needed"] else ""))
             return 3 if plan["questions"] else 0
         if a.confirm != plan["id"]:
-            raise engine.Stop("the machine changed since the dry run (plan %s, confirmed %s): show the new plan and "
-                              "ask again" % (plan["id"], a.confirm), 3)
+            raise engine.Stop("the machine changed since the dry run (plan %s, confirmed %s)%s: show the new plan and "
+                              "ask again" % (plan["id"], a.confirm,
+                                             ", or the date changed (a plan that needs memory "
+                                             "approval carries today's date)" if plan["approval_needed"] else ""), 3)
         archive, warnings = engine.upgrade(REPO, answers, homes, stamp, opts, plan, ctx)
         if archive:
             print("archive: " + archive)

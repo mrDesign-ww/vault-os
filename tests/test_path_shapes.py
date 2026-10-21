@@ -372,6 +372,42 @@ class PhaseOrderTest(unittest.TestCase):
                             (name, plan["warnings"]))
 
 
+@unittest.skipUnless(POSIX and hasattr(os, "mkfifo"), "needs POSIX FIFOs")
+class SpecialFileTest(unittest.TestCase):
+    """SPOT-CHECK-3 MINOR 3: a FIFO anywhere in the vault used to hang the dry run (a blocking read). It is a plan
+    question now, at once, and nothing is written."""
+
+    def check(self, rel):
+        m = machine()
+        self.addCleanup(m.cleanup)
+        os.mkfifo(str(m.vault / rel))
+        self.assertEqual(fsx.shape(str(m.vault / rel)), "special")
+        before = m.snapshot()
+        out = m.engine("upgrade", *args_of(m), "--json", timeout=60)  # a hang is a TimeoutExpired: a failure
+        self.assertEqual(out.returncode, 3, out.stdout + out.stderr)
+        plan = json.loads(out.stdout)["plan"]
+        self.assertEqual([q for q in plan["questions"] if rel in q and "special file" in q], plan["questions"][:1])
+        self.assertEqual(m.snapshot(), before, "the dry run wrote")
+        refused = m.engine("upgrade", *args_of(m), "--confirm", plan["id"], timeout=60)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertEqual(m.snapshot(), before, "the refused confirm wrote")
+
+    def test_a_fifo_at_a_system_path_is_a_question(self):
+        self.check("AGENTS.md")
+
+    def test_a_fifo_at_a_personal_path_is_a_question(self):
+        self.check("Notes/pipe.md")
+
+    def test_non_regular_files_are_never_opened(self):
+        tmp = Path(tempfile.mkdtemp(prefix="vault-os-fifo-"))
+        self.addCleanup(shutil.rmtree, str(tmp), True)
+        os.mkfifo(str(tmp / "pipe.md"))
+        for call in (fsx.sha256_file, migrate.read_text):
+            with self.assertRaises(OSError):
+                call(str(tmp / "pipe.md"))
+        self.assertEqual(fsx.entry_state(str(tmp / "pipe.md")), {"type": "special"})
+
+
 @unittest.skipUnless(POSIX, "the upgrade runs on POSIX")
 class PathShapeMatrixTest(unittest.TestCase):
     def test_every_system_path_times_every_shape(self):
